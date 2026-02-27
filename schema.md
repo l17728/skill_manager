@@ -807,6 +807,97 @@
 
 ---
 
+# 八.五、Rankings 虚拟数据结构（由 leaderboard:query 返回，不存储到磁盘）
+
+## 8.5.1 LeaderboardRecord
+
+**说明**：表示单次测试的成绩记录，由 `leaderboard-service` 在内存中组装，
+源数据来自 `results/summary.json`（分数）和 `workspace/skills|baselines/.../meta.json`（当前版本）。
+
+```json
+{
+  "skill_id":                  "3f9a1b2c-...",
+  "skill_name":                "Alpha Coder",
+  "skill_version_tested":      "v1",
+  "skill_version_current":     "v3",
+  "baseline_id":               "7e2d4f5a-...",
+  "baseline_name":             "Python 编程基线",
+  "baseline_version_tested":   "v1",
+  "baseline_version_current":  "v2",
+  "avg_score":                 87.3,
+  "score_breakdown": {
+    "functional_correctness":  26,
+    "robustness":              18,
+    "readability":             13,
+    "conciseness":             13,
+    "complexity_control":       9,
+    "format_compliance":        8.3
+  },
+  "project_id":        "a1b2c3d4-...",
+  "project_name":      "Python 对比测试 #3",
+  "tested_at":         "2024-02-27T10:30:00.000Z",
+  "case_count":        10,
+  "completed_cases":   10,
+  "failed_cases":       0,
+  "staleness":         "skill_updated"
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `skill_version_tested` | string | 是 | 来自 `summary.json ranking[].skill_version` |
+| `skill_version_current` | string | 是 | 来自当前 Skill `meta.json version` |
+| `baseline_version_tested` | string | 是 | 来自项目 `config.json baselines[].version` |
+| `baseline_version_current` | string | 是 | 来自当前 Baseline `meta.json version` |
+| `staleness` | string | 是 | 枚举：`current` \| `skill_updated` \| `baseline_updated` \| `both_updated` |
+| `tested_at` | string | 是 | 来自 `summary.json generated_at` |
+
+## 8.5.2 LeaderboardGroup
+
+**说明**：`leaderboard:query` 在 `groupByBaseline=true`（默认）时的返回单元。
+
+```json
+{
+  "baseline_id":              "7e2d4f5a-...",
+  "baseline_name":            "Python 编程基线",
+  "baseline_purpose":         "coding",
+  "baseline_case_count":      10,
+  "baseline_version_current": "v2",
+  "skill_count":               3,
+  "records": []
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `skill_count` | number | 是 | 该 Baseline 下参与排名的不同 skill_id 数量 |
+| `records` | LeaderboardRecord[] | 是 | 按 `avg_score` 降序，相同 Skill 多条记录全部包含 |
+
+## 8.5.3 SkillTestSummary
+
+**说明**：`skill:list` 和 `skill:get` 返回值中的 `testSummary` 聚合字段，
+驱动 Skill 列表中的成绩 badge。为 `null` 时表示该 Skill 无任何测试记录。
+
+```json
+{
+  "has_tests":          true,
+  "best_score":         87.3,
+  "best_baseline_name": "Python 编程基线",
+  "test_count":         5,
+  "staleness":          "skill_updated"
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `has_tests` | boolean | 是 | 是否存在任意测试记录 |
+| `best_score` | number\|null | 是 | 跨所有 Baseline 的最高 avg_score |
+| `best_baseline_name` | string\|null | 是 | best_score 所在 Baseline 名称 |
+| `test_count` | number | 是 | 所有项目中该 Skill 参与测试的总次数 |
+| `staleness` | string\|null | 是 | 所有记录中新鲜度最好的那条状态；若有任何 `current` 则整体为 `current` |
+
+---
+
 # 九、Schema 校验规则速查
 
 | 文件 | 关键必填字段 | 关键枚举字段 |

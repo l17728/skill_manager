@@ -1226,6 +1226,135 @@ interface PaginationResult<T> {
 
 ---
 
+# 十四.五、成绩排行榜通道（Rankings & Leaderboard）
+
+## `leaderboard:query`
+
+**入参**
+
+```typescript
+{
+  baselineId?:      string    // 按基线 ID 过滤；省略则返回所有基线
+  skillId?:         string    // 按 Skill ID 过滤；省略则返回所有 Skill
+  purpose?:         string    // 按用途过滤（coding / writing / analysis 等）
+  dateFrom?:        string    // ISO 日期，只返回 tested_at >= dateFrom 的记录
+  dateTo?:          string    // ISO 日期，只返回 tested_at <= dateTo 的记录
+  includeStale?:    boolean   // 默认 true；false 则只返回 staleness='current' 的记录
+  groupByBaseline?: boolean   // 默认 true（无 baselineId 时）；传 false 返回平铺数组
+}
+```
+
+**返回**
+
+```typescript
+{
+  success: true,
+  data: {
+    // groupByBaseline=true 时（默认）
+    groups?: LeaderboardGroup[]
+
+    // groupByBaseline=false 或指定了 baselineId 时
+    records?: LeaderboardRecord[]
+  }
+}
+```
+
+**LeaderboardGroup**
+
+```typescript
+{
+  baseline_id:              string
+  baseline_name:            string
+  baseline_purpose:         string
+  baseline_case_count:      number
+  baseline_version_current: string
+  skill_count:              number           // 参与排名的不同 skill 数量
+  records:                  LeaderboardRecord[]  // 按 best avg_score 降序
+}
+```
+
+**LeaderboardRecord**
+
+```typescript
+{
+  // 身份信息
+  skill_id:                  string
+  skill_name:                string
+  skill_version_tested:      string   // 测试时的 Skill 版本
+  skill_version_current:     string   // 当前最新 Skill 版本
+  baseline_id:               string
+  baseline_name:             string
+  baseline_version_tested:   string   // 测试时的 Baseline 版本
+  baseline_version_current:  string   // 当前最新 Baseline 版本
+
+  // 得分
+  avg_score:       number
+  score_breakdown: {
+    functional_correctness: number   // 满分 30
+    robustness:             number   // 满分 20
+    readability:            number   // 满分 15
+    conciseness:            number   // 满分 15
+    complexity_control:     number   // 满分 10
+    format_compliance:      number   // 满分 10
+  }
+
+  // 测试上下文
+  project_id:        string
+  project_name:      string
+  tested_at:         string    // ISO 时间戳，来自 summary.json.generated_at
+  case_count:        number    // 总用例数
+  completed_cases:   number
+  failed_cases:      number
+
+  // 新鲜度
+  staleness: 'current' | 'skill_updated' | 'baseline_updated' | 'both_updated'
+}
+```
+
+**staleness 枚举说明**
+
+| 值 | 含义 | 严重程度 |
+|---|---|---|
+| `current` | 测试时的 Skill 版本和 Baseline 版本均未变 | — |
+| `skill_updated` | Skill 在测试后有新版本，成绩对应旧版本 | 低 |
+| `baseline_updated` | Baseline 测试用例在测试后被修改，分母已变 | **高** |
+| `both_updated` | Skill 和 Baseline 均已更新 | 最高 |
+
+> 新鲜度在查询时动态计算，不写入磁盘。
+
+---
+
+## `leaderboard:export`
+
+**入参**
+
+```typescript
+{
+  baselineId?: string        // 与 leaderboard:query 相同含义
+  skillId?:    string
+  format:      'csv' | 'json'
+}
+```
+
+**返回**
+
+```typescript
+{
+  success: true,
+  data: {
+    filePath: string   // 导出文件绝对路径，存储于 workspace/ 目录下
+                       // 文件名格式：leaderboard_export_<YYYYMMDDHHmmss>.<ext>
+  }
+}
+```
+
+CSV 列顺序：`skill_name, skill_version_tested, skill_version_current, baseline_name,
+baseline_version_tested, baseline_version_current, avg_score, functional_correctness,
+robustness, readability, conciseness, complexity_control, format_compliance,
+project_id, tested_at, staleness`
+
+---
+
 # 十五、Preload API 汇总
 
 `preload.js` 通过 `contextBridge.exposeInMainWorld('api', {...})` 暴露以下结构：
@@ -1257,6 +1386,7 @@ window.api = {
   workspace: { init },
   search: { global },
   log: { query },
+  leaderboard: { query, export: exp },
 
   // on 类（事件监听，返回 unsubscribe 函数）
   on: (channel: string, callback: (data: any) => void) => () => void
