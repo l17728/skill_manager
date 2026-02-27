@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Skill Manager</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- ===== Top Bar ===== -->
+<div id="topbar">
+  <span class="logo">⚡ SkillManager</span>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-page="skill">Skills &amp; Agents</button>
+    <button class="nav-tab" data-page="baseline">Baselines</button>
+    <button class="nav-tab" data-page="project">Projects</button>
+  </div>
+  <div class="topbar-right">
+    <div id="cli-status">
+      <span class="status-dot" id="cli-dot"></span>
+      <span id="cli-version-label">CLI: checking…</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Main Layout ===== -->
+<div id="main">
+
+  <!-- ===== Content Area ===== -->
+  <div id="content">
+
+    <!-- ===== Skill Page ===== -->
+    <div class="page active" id="page-skill">
+      <!-- Col 1: List -->
+      <div class="col-list">
+        <div class="panel-header">
+          <span class="panel-title">Skills</span>
+          <button class="btn btn-primary btn-sm" id="skill-import-btn">+ Import</button>
+        </div>
+        <div class="search-wrap">
+          <input class="search-input" id="skill-search" placeholder="Search name / description…" type="text">
+        </div>
+        <div class="filter-section" id="skill-filter-section">
+          <div class="filter-row">
+            <input class="filter-input" id="skill-tag-input" placeholder="+ filter by tag, press Enter" type="text">
+          </div>
+          <div class="active-filters" id="skill-active-tags"></div>
+          <div class="filter-row" style="margin-top:4px;gap:4px">
+            <input class="filter-input" id="skill-purpose-input" placeholder="Purpose…" type="text" style="flex:1">
+            <input class="filter-input" id="skill-provider-input" placeholder="Provider…" type="text" style="flex:1">
+          </div>
+        </div>
+        <div class="skill-list" id="skill-list"></div>
+        <div class="pagination" id="skill-pagination"></div>
+      </div>
+
+      <!-- Col 2+3: Detail / Edit -->
+      <div class="col-detail">
+        <div id="skill-detail-empty" class="empty-state">
+          <div class="icon">🔮</div>
+          <div class="title">Select a skill to view details</div>
+          <div class="sub">Or import a new skill to get started</div>
+        </div>
+        <div id="skill-detail" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+          <div class="panel-header">
+            <span class="panel-title" id="skill-detail-name">—</span>
+            <button class="btn btn-secondary btn-sm" id="skill-edit-btn">Edit</button>
+            <button class="btn btn-secondary btn-sm" id="skill-autotag-btn">Auto-Tag</button>
+            <button class="btn btn-danger btn-sm" id="skill-delete-btn">Delete</button>
+          </div>
+          <div class="detail-scroll" id="skill-detail-body"></div>
+        </div>
+      </div>
+
+      <!-- Col 4: Aux (Tags / Versions) -->
+      <div class="col-aux">
+        <div class="panel-header">
+          <span class="panel-title">Info</span>
+        </div>
+        <div id="skill-aux-body" class="detail-scroll"></div>
+      </div>
+    </div>
+
+    <!-- ===== Baseline Page ===== -->
+    <div class="page" id="page-baseline">
+      <div class="col-list">
+        <div class="panel-header">
+          <span class="panel-title">Baselines</span>
+          <button class="btn btn-primary btn-sm" id="baseline-import-btn">+ Import</button>
+        </div>
+        <div class="search-wrap">
+          <input class="search-input" id="baseline-search" placeholder="Search name / description…" type="text">
+        </div>
+        <div class="filter-section" id="baseline-filter-section">
+          <div class="filter-row">
+            <input class="filter-input" id="baseline-tag-input" placeholder="+ filter by tag, press Enter" type="text">
+          </div>
+          <div class="active-filters" id="baseline-active-tags"></div>
+          <div class="filter-row" style="margin-top:4px;gap:4px">
+            <input class="filter-input" id="baseline-purpose-input" placeholder="Purpose…" type="text" style="flex:1">
+            <input class="filter-input" id="baseline-provider-input" placeholder="Provider…" type="text" style="flex:1">
+          </div>
+        </div>
+        <div class="skill-list" id="baseline-list"></div>
+        <div class="pagination" id="baseline-pagination"></div>
+      </div>
+      <div class="col-detail">
+        <div id="baseline-detail-empty" class="empty-state">
+          <div class="icon">📋</div>
+          <div class="title">Select a baseline to view details</div>
+        </div>
+        <div id="baseline-detail" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+          <div class="panel-header">
+            <span class="panel-title" id="baseline-detail-name">—</span>
+            <button class="btn btn-secondary btn-sm" id="baseline-add-case-btn">+ Add Case</button>
+            <button class="btn btn-secondary btn-sm" id="baseline-autotag-btn">Auto-Tag</button>
+          </div>
+          <div class="detail-scroll" id="baseline-detail-body"></div>
+        </div>
+      </div>
+      <div class="col-aux">
+        <div class="panel-header">
+          <span class="panel-title">Info</span>
+        </div>
+        <div id="baseline-aux-body" class="detail-scroll"></div>
+      </div>
+    </div>
+
+    <!-- ===== Project Page ===== -->
+    <div class="page" id="page-project">
+      <div class="col-list">
+        <div class="panel-header">
+          <span class="panel-title">Projects</span>
+          <button class="btn btn-primary btn-sm" id="project-create-btn">+ Create</button>
+        </div>
+        <div class="search-wrap">
+          <input class="search-input" id="project-search" placeholder="Search projects…" type="text">
+        </div>
+        <div class="skill-list" id="project-list"></div>
+        <div class="pagination" id="project-pagination"></div>
+      </div>
+      <div class="col-detail">
+        <div id="project-detail-empty" class="empty-state">
+          <div class="icon">🧪</div>
+          <div class="title">Select a project to view details</div>
+        </div>
+        <div id="project-detail" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+          <div class="panel-header">
+            <span class="panel-title" id="project-detail-name">—</span>
+            <button class="btn btn-secondary btn-sm" id="project-export-btn">Export</button>
+            <button class="btn btn-danger btn-sm" id="project-delete-btn">Delete</button>
+          </div>
+          <!-- Tab bar -->
+          <div class="detail-tabs" id="project-tabs">
+            <button class="detail-tab active" data-ptab="overview">Overview</button>
+            <button class="detail-tab" data-ptab="test">Test</button>
+            <button class="detail-tab" data-ptab="analysis">Analysis</button>
+            <button class="detail-tab" data-ptab="recompose">Recompose</button>
+            <button class="detail-tab" data-ptab="iteration">Iteration</button>
+          </div>
+
+          <!-- Overview pane -->
+          <div class="project-tab-pane active" id="ptab-overview">
+            <div class="detail-scroll" id="project-overview-body"></div>
+          </div>
+
+          <!-- Test pane -->
+          <div class="project-tab-pane" id="ptab-test">
+            <div class="panel-header" style="flex-shrink:0">
+              <span class="panel-title">Comparative Test</span>
+              <button class="btn btn-primary btn-sm" id="test-start-btn">▶ Start</button>
+              <button class="btn btn-secondary btn-sm" id="test-pause-btn" style="display:none">⏸ Pause</button>
+              <button class="btn btn-secondary btn-sm" id="test-resume-btn" style="display:none">▶ Resume</button>
+              <button class="btn btn-danger btn-sm" id="test-stop-btn" style="display:none">■ Stop</button>
+            </div>
+            <div id="test-progress-bar" style="display:none;padding:4px 12px;flex-shrink:0">
+              <div class="progress-track"><div class="progress-fill" id="test-progress-fill" style="width:0%"></div></div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px" id="test-progress-label"></div>
+            </div>
+            <div class="detail-scroll" id="test-results-body"></div>
+          </div>
+
+          <!-- Analysis pane -->
+          <div class="project-tab-pane" id="ptab-analysis">
+            <div class="panel-header" style="flex-shrink:0">
+              <span class="panel-title">Analysis Report</span>
+              <button class="btn btn-primary btn-sm" id="analysis-run-btn">Run Analysis</button>
+              <button class="btn btn-secondary btn-sm" id="analysis-export-btn">Export</button>
+            </div>
+            <div class="detail-scroll" id="analysis-body"></div>
+          </div>
+
+          <!-- Recompose pane -->
+          <div class="project-tab-pane" id="ptab-recompose">
+            <div class="panel-header" style="flex-shrink:0">
+              <span class="panel-title">Skill Recompose</span>
+              <button class="btn btn-primary btn-sm" id="recompose-execute-btn">Execute</button>
+              <button class="btn btn-secondary btn-sm" id="recompose-save-open-btn" style="display:none">Save as Skill</button>
+            </div>
+            <div class="detail-scroll" id="recompose-body"></div>
+          </div>
+
+          <!-- Iteration pane -->
+          <div class="project-tab-pane" id="ptab-iteration">
+            <div class="panel-header" style="flex-shrink:0">
+              <span class="panel-title">Iteration Loop</span>
+              <button class="btn btn-primary btn-sm" id="iteration-start-btn">▶ Start</button>
+              <button class="btn btn-danger btn-sm" id="iteration-stop-btn" style="display:none">■ Stop</button>
+            </div>
+            <div style="padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+              <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Start Skill:</label>
+                  <input class="form-input" id="iter-skill-id" type="text" placeholder="skill ref_id" style="width:130px;padding:4px 8px">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Max Rounds:</label>
+                  <input class="form-input" id="iter-max-rounds" type="number" value="3" min="1" max="10" style="width:55px;padding:4px 8px">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Stop Score:</label>
+                  <input class="form-input" id="iter-stop-threshold" type="number" value="0" min="0" max="100" style="width:55px;padding:4px 8px">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Mode:</label>
+                  <select class="form-input" id="iter-mode" style="width:auto;padding:4px 6px;font-size:12px">
+                    <option value="standard">Standard</option>
+                    <option value="explore">Explore</option>
+                    <option value="adaptive">Adaptive</option>
+                  </select>
+                </div>
+              </div>
+              <div id="iter-advanced-row" style="display:none;flex-wrap:wrap;gap:10px;align-items:center">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Beam Width:</label>
+                  <input class="form-input" id="iter-beam-width" type="number" value="2" min="1" max="4" style="width:45px;padding:4px 8px">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Plateau Δ:</label>
+                  <input class="form-input" id="iter-plateau-threshold" type="number" value="1.0" min="0.1" max="5" step="0.1" style="width:55px;padding:4px 8px">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Escape After:</label>
+                  <input class="form-input" id="iter-plateau-rounds" type="number" value="2" min="1" max="5" style="width:45px;padding:4px 8px">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">Rules:</label>
+                  <input class="form-input" id="iter-retention-rules" type="text" placeholder="retention rules (optional)" style="width:180px;padding:4px 8px">
+                </div>
+              </div>
+            </div>
+            <div class="detail-scroll" id="iteration-body"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-aux">
+        <div class="panel-header">
+          <span class="panel-title">Project Info</span>
+        </div>
+        <div id="project-aux-body" class="detail-scroll"></div>
+      </div>
+    </div>
+
+  </div><!-- #content -->
+</div><!-- #main -->
+
+<!-- ===== Hover Preview ===== -->
+<div class="hover-preview" id="hover-preview"></div>
+
+<!-- ===== Notify Container ===== -->
+<div id="notify-container"></div>
+
+<!-- ===== Modals ===== -->
+
+<!-- Skill Import Modal -->
+<div class="modal-overlay" id="skill-import-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Import Skill</span>
+      <button class="btn-icon modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-tabs">
+        <button class="import-tab active" data-tab="text">Paste Text</button>
+        <button class="import-tab" data-tab="file">From File</button>
+      </div>
+      <div class="form-field">
+        <label>Name *</label>
+        <input class="form-input" id="skill-import-name" placeholder="Skill name">
+      </div>
+      <div class="form-field">
+        <label>Purpose * (directory category)</label>
+        <input class="form-input" id="skill-import-purpose" placeholder="e.g. code_generate">
+      </div>
+      <!-- Purpose merge suggestion banner (shown dynamically) -->
+      <div id="skill-purpose-suggestion" style="display:none;margin-bottom:8px;padding:10px;background:rgba(124,106,247,0.1);border:1px solid var(--accent);border-radius:6px;font-size:12px">
+        <div style="font-weight:600;margin-bottom:6px;color:var(--accent-light)">💡 Purpose Merge Suggestion</div>
+        <div id="skill-purpose-suggestion-text" style="color:var(--text-secondary);margin-bottom:8px;line-height:1.5"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" id="skill-purpose-merge-btn">Use Existing</button>
+          <button class="btn btn-secondary btn-sm" id="skill-purpose-keep-btn">Keep New Purpose</button>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Provider * (directory identifier)</label>
+        <input class="form-input" id="skill-import-provider" placeholder="e.g. provider_internal">
+      </div>
+      <div class="form-field">
+        <label>Description</label>
+        <input class="form-input" id="skill-import-description" placeholder="Optional description">
+      </div>
+      <div class="form-field">
+        <label>Author</label>
+        <input class="form-input" id="skill-import-author" placeholder="Optional author">
+      </div>
+      <div class="form-field">
+        <label>Type</label>
+        <select class="form-input" id="skill-import-type">
+          <option value="skill">Skill</option>
+          <option value="agent">Agent</option>
+        </select>
+      </div>
+      <!-- Text tab -->
+      <div class="tab-content active" id="tab-text">
+        <div class="form-field">
+          <label>Prompt Content *</label>
+          <textarea class="form-input content-box" id="skill-import-content" rows="8" placeholder="Paste your skill prompt here…"></textarea>
+        </div>
+      </div>
+      <!-- File tab -->
+      <div class="tab-content" id="tab-file">
+        <div class="form-field">
+          <label>File Path (.txt / .md / .json)</label>
+          <input class="form-input" id="skill-import-filepath" placeholder="Absolute file path">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="skill-import-confirm">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Skill Edit Modal -->
+<div class="modal-overlay" id="skill-edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Edit Skill</span>
+      <button class="btn-icon modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Name</label>
+        <input class="form-input" id="skill-edit-name">
+      </div>
+      <div class="form-field">
+        <label>Description</label>
+        <input class="form-input" id="skill-edit-description">
+      </div>
+      <div class="form-field">
+        <label>Author</label>
+        <input class="form-input" id="skill-edit-author">
+      </div>
+      <div class="form-field">
+        <label>Type</label>
+        <select class="form-input" id="skill-edit-type">
+          <option value="skill">Skill</option>
+          <option value="agent">Agent</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Prompt Content</label>
+        <textarea class="form-input content-box" id="skill-edit-content" rows="10"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="skill-edit-confirm">Save (New Version)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Tag Modal -->
+<div class="modal-overlay" id="add-tag-modal">
+  <div class="modal" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title">Add Tag</span>
+      <button class="btn-icon modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Tag Value</label>
+        <input class="form-input" id="add-tag-value" placeholder="Enter tag…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="add-tag-confirm">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Baseline Import Modal -->
+<div class="modal-overlay" id="baseline-import-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Import Baseline</span>
+      <button class="btn-icon modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-tabs">
+        <button class="import-tab active" data-tab="manual">Manual</button>
+        <button class="import-tab" data-tab="bfile">From File</button>
+        <button class="import-tab" data-tab="cli">CLI Generate</button>
+      </div>
+      <div class="form-field">
+        <label>Name *</label>
+        <input class="form-input" id="baseline-import-name" placeholder="Baseline name">
+      </div>
+      <div class="form-field">
+        <label>Purpose *</label>
+        <input class="form-input" id="baseline-import-purpose" placeholder="e.g. code_generate_test">
+      </div>
+      <div class="form-field">
+        <label>Provider *</label>
+        <input class="form-input" id="baseline-import-provider" placeholder="e.g. provider_internal">
+      </div>
+      <!-- Manual -->
+      <div class="tab-content active" id="tab-manual">
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Add cases below (one per row, JSON format or use "Add Case" after import).</p>
+      </div>
+      <!-- File -->
+      <div class="tab-content" id="tab-bfile">
+        <div class="form-field">
+          <label>File Path (cases.json format)</label>
+          <input class="form-input" id="baseline-import-filepath" placeholder="Absolute path to cases.json">
+        </div>
+      </div>
+      <!-- CLI -->
+      <div class="tab-content" id="tab-cli">
+        <div class="form-field">
+          <label>Task Description</label>
+          <textarea class="form-input" id="baseline-import-prompt" rows="4" placeholder="Describe the task to generate test cases for…"></textarea>
+        </div>
+        <div class="form-field">
+          <label>Number of Cases</label>
+          <input class="form-input" id="baseline-import-count" type="number" value="10" min="1" max="50">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="baseline-import-confirm">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project Create Modal -->
+<div class="modal-overlay" id="project-create-modal">
+  <div class="modal" style="width:620px">
+    <div class="modal-header">
+      <span class="modal-title">Create Project</span>
+      <button class="btn-icon modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Project Name *</label>
+        <input class="form-input" id="project-name" placeholder="e.g. Python Skill Comparison">
+      </div>
+      <div class="form-field">
+        <label>Description</label>
+        <input class="form-input" id="project-description" placeholder="Optional description">
+      </div>
+      <div class="form-field">
+        <label>Select Skills * (hold Ctrl/Cmd to multi-select)</label>
+        <select class="form-input" id="project-skills-select" multiple size="5"></select>
+      </div>
+      <div class="form-field">
+        <label>Select Baselines * (hold Ctrl/Cmd to multi-select)</label>
+        <select class="form-input" id="project-baselines-select" multiple size="4"></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <label>Model</label>
+          <input class="form-input" id="project-model" value="claude-opus-4-6">
+        </div>
+        <div class="form-field">
+          <label>Timeout (seconds)</label>
+          <input class="form-input" id="project-timeout" type="number" value="60">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="project-create-confirm">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recompose Save Modal -->
+<div class="modal-overlay" id="recompose-save-modal">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <span class="modal-title">Save Recomposed Skill</span>
+      <button class="btn-icon modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Skill Name *</label>
+        <input class="form-input" id="recompose-save-name" placeholder="e.g. Python Expert (Recomposed)">
+      </div>
+      <div class="form-field">
+        <label>Purpose *</label>
+        <input class="form-input" id="recompose-save-purpose" placeholder="e.g. code_generate">
+      </div>
+      <div class="form-field">
+        <label>Provider *</label>
+        <input class="form-input" id="recompose-save-provider" placeholder="e.g. recomposed">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="recompose-save-confirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/components/notify.js"></script>
+<script src="js/components/modal.js"></script>
+<script src="js/pages/skill.js"></script>
+<script src="js/pages/baseline.js"></script>
+<script src="js/pages/project.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

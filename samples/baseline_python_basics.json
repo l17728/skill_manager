@@ -1,0 +1,46 @@
+{
+  "cases": [
+    {
+      "name": "列表升序排序",
+      "category": "standard",
+      "input": "请用Python实现一个函数sort_list(nums: list[int]) -> list[int]，对整数列表进行升序排序，不得使用内置sort()或sorted()方法，要求时间复杂度O(n²)以内",
+      "expected_output": "实现手动排序算法（冒泡/选择/插入排序均可），函数接受列表参数，返回排序后的新列表，原列表不修改"
+    },
+    {
+      "name": "字符串反转",
+      "category": "standard",
+      "input": "请用Python实现一个函数reverse_words(sentence: str) -> str，将句子中的单词顺序反转（不是字符反转），例如输入'hello world foo'输出'foo world hello'",
+      "expected_output": "按空格分割后反转列表再拼接，处理多余空格的情况，返回字符串"
+    },
+    {
+      "name": "斐波那契数列",
+      "category": "standard",
+      "input": "请用Python实现fibonacci(n: int) -> list[int]，返回前n个斐波那契数组成的列表，n>=1，要求使用动态规划而不是递归",
+      "expected_output": "使用迭代方式生成，时间复杂度O(n)，空间复杂度O(n)，返回[0, 1, 1, 2, 3, 5, ...]格式的列表"
+    },
+    {
+      "name": "空列表排序",
+      "category": "boundary",
+      "input": "请用Python实现函数safe_sort(nums: list[int]) -> list[int]，对整数列表排序并返回，需要正确处理空列表和单元素列表的边界情况",
+      "expected_output": "对空列表返回[]，对单元素列表返回原列表的副本，对多元素列表正确排序"
+    },
+    {
+      "name": "超大整数处理",
+      "category": "boundary",
+      "input": "请用Python实现sum_large(a: int, b: int) -> str，计算两个超大整数（可能超过64位）的和，并以字符串形式返回结果，不使用第三方大数库",
+      "expected_output": "利用Python原生大整数支持，直接计算并转为字符串，或手动实现字符串大数加法"
+    },
+    {
+      "name": "非法输入处理",
+      "category": "exception",
+      "input": "请用Python实现函数divide(a, b)，计算a除以b，需要处理以下异常情况：b为0时抛出ValueError并附带说明信息，a或b不是数字时抛出TypeError",
+      "expected_output": "函数包含类型检查和零除检查，抛出明确的异常类型和描述性消息，不使用裸except"
+    },
+    {
+      "name": "None值处理",
+      "category": "exception",
+      "input": "请用Python实现函数get_length(obj) -> int，安全地获取对象（字符串、列表、字典等）的长度，obj为None时返回0，类型不支持len()时返回-1，不得抛出异常",
+      "expected_output": "使用isinstance检查或try-except捕获TypeError，None返回0，不支持len()的类型返回-1"
+    }
+  ]
+}

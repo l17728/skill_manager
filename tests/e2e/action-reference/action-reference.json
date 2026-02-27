@@ -1,0 +1,228 @@
+{
+  "version": "1.0.0",
+  "description": "SkillManager UI action reference for Claude agent test generation. Each entry describes one user-visible action: what DOM elements to interact with, what parameters are needed, and what outcome to assert.",
+  "connection": "Playwright CDP — chromium.connectOverCDP('http://localhost:9222')",
+  "pageObjects": {
+    "AppPage":      "tests/e2e/pages/app-page.js",
+    "SkillPage":    "tests/e2e/pages/skill-page.js",
+    "BaselinePage": "tests/e2e/pages/baseline-page.js",
+    "ProjectPage":  "tests/e2e/pages/project-page.js"
+  },
+
+  "global": {
+    "navigateTo": {
+      "description": "Click the top navigation tab to switch the active page",
+      "method": "appPage.navigateTo(page)",
+      "params": [
+        { "name": "page", "type": "string", "enum": ["skill", "baseline", "project"], "required": true }
+      ],
+      "selector": ".nav-tab[data-page=\"<page>\"]",
+      "asserts": ["#page-<page> has class 'active'"]
+    },
+    "expectSuccessNotification": {
+      "description": "Assert that a green success toast appears in #notify-container",
+      "method": "appPage.expectSuccessNotification()",
+      "params": [],
+      "asserts": [".notify.success is visible within 8s"]
+    },
+    "expectErrorNotification": {
+      "description": "Assert that a red error toast appears",
+      "method": "appPage.expectErrorNotification()",
+      "params": [],
+      "asserts": [".notify.error is visible within 8s"]
+    }
+  },
+
+  "skill": {
+    "importSkill": {
+      "description": "Open the import modal, fill name/purpose/provider/content fields, click Import. Uses the 'Text' tab (paste mode).",
+      "method": "skillPage.importSkill({ name, purpose, provider, content })",
+      "params": [
+        { "name": "name",     "type": "string", "required": true,  "selector": "#skill-import-name" },
+        { "name": "purpose",  "type": "string", "required": true,  "selector": "#skill-import-purpose" },
+        { "name": "provider", "type": "string", "required": true,  "selector": "#skill-import-provider" },
+        { "name": "content",  "type": "string", "required": true,  "selector": "#skill-import-content" }
+      ],
+      "trigger": { "selector": "#skill-import-btn", "action": "click" },
+      "confirm": { "selector": "#skill-import-confirm", "action": "click" },
+      "asserts": ["success notification", "skill name visible in #skill-list"]
+    },
+
+    "selectSkill": {
+      "description": "Click a skill item in the list by its display name to open the detail panel",
+      "method": "skillPage.selectSkill(name)",
+      "params": [
+        { "name": "name", "type": "string", "required": true, "selector": "#skill-list .skill-item" }
+      ],
+      "asserts": ["#skill-detail is visible", "#skill-detail-name has text matching name"]
+    },
+
+    "editSkill": {
+      "description": "Click Edit button, optionally change name and/or content, click Save. Requires a skill to be selected first.",
+      "method": "skillPage.editSkill({ name?, content? })",
+      "params": [
+        { "name": "name",    "type": "string", "required": false, "selector": "#skill-edit-name" },
+        { "name": "content", "type": "string", "required": false, "selector": "#skill-edit-content" }
+      ],
+      "trigger": { "selector": "#skill-edit-btn", "action": "click" },
+      "confirm": { "selector": "#skill-edit-confirm", "action": "click" },
+      "asserts": ["success notification", "new version badge in #skill-aux-body"]
+    },
+
+    "addTag": {
+      "description": "Click the '+ Add' tag button in the detail body, fill in tag value, click Confirm. Requires a skill to be selected first.",
+      "method": "skillPage.addTag(value)",
+      "params": [
+        { "name": "value", "type": "string", "required": true, "selector": "#add-tag-value" }
+      ],
+      "trigger": { "selector": "#skill-add-tag-btn", "action": "click" },
+      "confirm": { "selector": "#add-tag-confirm", "action": "click" },
+      "asserts": ["success notification", "tag with value visible in #skill-detail-body .tag"]
+    },
+
+    "reviewAutoTag": {
+      "description": "Approve or reject a pending auto-tag in the detail body. Requires auto-tagging to have completed first.",
+      "method": "skillPage.reviewAutoTag(tagId, action)",
+      "params": [
+        { "name": "tagId",  "type": "string", "required": true },
+        { "name": "action", "type": "string", "enum": ["approve", "reject"], "required": true }
+      ],
+      "trigger": {
+        "selector": "[data-review-action=\"<action>\"][data-tag-id=\"<tagId>\"]",
+        "action": "click"
+      },
+      "asserts": ["success notification", "pending tag count decreases"]
+    },
+
+    "rollbackVersion": {
+      "description": "Click the Restore button for a specific version in the aux (version history) panel. Creates a new version.",
+      "method": "skillPage.rollbackVersion(version)",
+      "params": [
+        { "name": "version", "type": "string", "example": "v1", "required": true }
+      ],
+      "trigger": {
+        "selector": "#skill-aux-body [data-rollback-version=\"<version>\"]",
+        "action": "click"
+      },
+      "asserts": ["success notification", "new version badge appears in version history"]
+    },
+
+    "deleteSkill": {
+      "description": "Click the Delete button. A window.confirm() dialog will appear — accept it to proceed. Requires a skill to be selected.",
+      "method": "page.on('dialog', d => d.accept()); await skillPage.clickDelete()",
+      "params": [],
+      "trigger": { "selector": "#skill-delete-btn", "action": "click" },
+      "dialogs": ["window.confirm — accept to confirm deletion"],
+      "asserts": ["skill name no longer in #skill-list", "#skill-detail-empty is visible"]
+    },
+
+    "triggerAutoTag": {
+      "description": "Click the Auto-Tag button to start background auto-tagging. Returns immediately; completion comes via push event. REQUIRES real Claude CLI + API key — skip in CI.",
+      "method": "skillPage.autotagBtn.click()",
+      "params": [],
+      "trigger": { "selector": "#skill-autotag-btn", "action": "click" },
+      "asserts": ["info notification 'Auto-tagging started'"],
+      "note": "Mark test.skip — requires real CLI"
+    },
+
+    "search": {
+      "description": "Type in the search box to filter the skill list. Debounced 350ms.",
+      "method": "skillPage.search(keyword)",
+      "params": [
+        { "name": "keyword", "type": "string", "required": true, "selector": "#skill-search" }
+      ],
+      "asserts": ["#skill-list only shows skills matching keyword after ~450ms"]
+    },
+
+    "filterByPurpose": {
+      "description": "Type in the purpose filter input to filter skills by purpose. Debounced 350ms.",
+      "method": "skillPage.purposeInput.fill(purpose); await skillPage.page.waitForTimeout(450)",
+      "params": [
+        { "name": "purpose", "type": "string", "required": true, "selector": "#skill-purpose-input" }
+      ],
+      "asserts": ["#skill-list only shows skills with matching purpose"]
+    },
+
+    "filterByTagChip": {
+      "description": "Click a .clickable-tag element in the list to add it as an active filter chip.",
+      "method": "skillPage.skillList.locator('.clickable-tag', { hasText: tag }).first().click()",
+      "params": [
+        { "name": "tag", "type": "string", "required": true }
+      ],
+      "asserts": ["filter chip appears in #skill-active-tags", "list is filtered"]
+    }
+  },
+
+  "baseline": {
+    "selectBaseline": {
+      "description": "Click a baseline item in the list to open detail",
+      "method": "baselinePage.selectBaseline(name)",
+      "params": [
+        { "name": "name", "type": "string", "required": true }
+      ],
+      "asserts": ["#baseline-detail is visible", "#baseline-detail-name has correct text"]
+    },
+
+    "rollbackVersion": {
+      "description": "Restore a previous baseline version (creates new version)",
+      "method": "baselinePage.rollbackVersion(version)",
+      "params": [
+        { "name": "version", "type": "string", "required": true }
+      ],
+      "trigger": {
+        "selector": "#baseline-aux-body [data-rollback-version=\"<version>\"]",
+        "action": "click"
+      },
+      "asserts": ["success notification", "new version badge in history"]
+    }
+  },
+
+  "project": {
+    "selectProject": {
+      "description": "Click a project item in the list to open detail",
+      "method": "projectPage.selectProject(name)",
+      "params": [
+        { "name": "name", "type": "string", "required": true }
+      ],
+      "asserts": ["#project-detail is visible", "#project-detail-name has correct text"]
+    },
+
+    "switchTab": {
+      "description": "Click a project detail tab button to switch the active tab view",
+      "method": "projectPage.switchTab(tabName)",
+      "params": [
+        { "name": "tabName", "type": "string", "enum": ["overview", "test", "analysis", "recompose", "iteration"], "required": true }
+      ],
+      "trigger": { "selector": "[data-ptab=\"<tabName>\"]", "action": "click" },
+      "asserts": ["#ptab-<tabName> is visible"]
+    }
+  },
+
+  "testGeneration": {
+    "guidelines": [
+      "Always call appPage.navigateTo(page) at the start of each test if the page may not be active",
+      "Use skillPage.expectSkillInList(name) after any import or create operation",
+      "Use skillPage.expectVersionInHistory(version) after edit or rollback",
+      "Wrap window.confirm-based deletions: page.on('dialog', d => d.accept()) before clickDelete()",
+      "Mark any test requiring real Claude CLI with test.skip and a comment",
+      "Use test.beforeAll for shared setup (app launch, workspace seeding) — not beforeEach",
+      "Use state-based assertions with explicit timeouts, never await page.waitForTimeout() for more than 500ms",
+      "Each spec file has its own workspace instance (created in beforeAll, cleaned in afterAll)"
+    ],
+    "templateBeforeAll": [
+      "workspace = createTestWorkspace({ skills: [...], baselines: [...] })",
+      "app = await launchApp(workspace.dir)",
+      "browser = await chromium.connectOverCDP(`http://localhost:${CDP_PORT}`)",
+      "const context = browser.contexts()[0]",
+      "page = context.pages()[0] || await context.newPage()",
+      "await page.waitForLoadState('domcontentloaded')",
+      "appPage = new AppPage(page); skillPage = new SkillPage(page)",
+      "await appPage.navigateTo('skill')"
+    ],
+    "templateAfterAll": [
+      "await browser.close()",
+      "await app.close()",
+      "workspace.cleanup()"
+    ]
+  }
+}
