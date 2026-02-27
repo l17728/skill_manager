@@ -3,11 +3,13 @@
 /**
  * test-service.js — Phase 3: Automated Comparative Testing
  *
- * Provides serial test execution (one CLI call at a time), pause/resume/stop,
- * per-task result writing, code-quality scoring, and progress callbacks.
+ * Provides parallel per-skill test execution (skills run concurrently, cases
+ * within each skill run sequentially), pause/resume/stop, per-task result
+ * writing, code-quality scoring, and progress callbacks.
  *
  * In-memory state lives in _runState (Map<projectId → RunState>).
  * Checkpoint is persisted to project config.json after each task.
+ * Each skill uses an isolated workingDir under .claude/ to avoid session conflicts.
  */
 
 const path = require('path')
@@ -141,7 +143,7 @@ function _saveCheckpoint(projectPath, state) {
     total_tasks:      state.tasks.length,
     completed_tasks:  state.completedTasks,
     failed_tasks:     state.failedTasks,
-    last_checkpoint:  state.currentIndex,
+    last_checkpoint:  state.completedTasks + state.failedTasks,
   }
   config.updated_at = new Date().toISOString()
   fileService.writeJson(configPath, config)
@@ -174,7 +176,7 @@ async function _executeTask(task, projectPath, config) {
   const { skillRef, skillContent, caseItem, baselineRef, resultPath } = task
   const model      = config.cli_config.model || 'claude-opus-4-6'
   const timeoutMs  = (config.cli_config.timeout_seconds || 60) * 1000
-  const workingDir = path.join(projectPath, '.claude')
+  const workingDir = path.join(projectPath, '.claude', `skill_${skillRef.ref_id.slice(0, 8)}`)
   fileService.ensureDir(workingDir)
 
   logService.info('test-service', 'task start', { skillId: skillRef.ref_id, caseId: caseItem.case_id, model })
@@ -323,55 +325,75 @@ function _writeSummary(projectId, projectPath, config, state) {
 }
 
 /**
- * The serial execution loop. Runs in the background via setImmediate.
+ * Parallel execution loop: skills run concurrently; cases within each skill
+ * run sequentially. Each skill uses an isolated .claude/ subdirectory.
+ * Runs in the background via setImmediate.
  */
 async function _runLoop(projectId, projectPath, config, state, onProgress) {
-  while (state.currentIndex < state.tasks.length) {
-    if (state.status === 'paused' || state.status === 'interrupted') break
-
-    const task = state.tasks[state.currentIndex]
-    const resultRecord = await _executeTask(task, projectPath, config)
-
-    if (resultRecord.status === 'completed') {
-      state.completedTasks++
-    } else {
-      state.failedTasks++
-    }
-
-    state.currentIndex++
-    _saveCheckpoint(projectPath, state)
-
-    const isLast = state.currentIndex >= state.tasks.length
-    if (onProgress) {
-      onProgress({
-        projectId,
-        completedTasks: state.completedTasks,
-        totalTasks:     state.tasks.length,
-        failedTasks:    state.failedTasks,
-        lastResult: {
-          skillId: task.skillRef.ref_id,
-          caseId:  task.caseItem.case_id,
-          status:  resultRecord.status,
-          score:   resultRecord.scores ? resultRecord.scores.total : undefined,
-        },
-        projectStatus: isLast ? 'completed' : 'running',
-      })
-    }
+  // Group tasks by skill for parallel execution
+  const skillGroups = new Map()
+  for (const task of state.tasks) {
+    const sid = task.skillRef.ref_id
+    if (!skillGroups.has(sid)) skillGroups.set(sid, [])
+    skillGroups.get(sid).push(task)
   }
 
-  // Loop exited — either all done, or paused/stopped
+  logService.info('test-service', 'Parallel run started', {
+    projectId, skillCount: skillGroups.size, totalTasks: state.tasks.length,
+  })
+
+  // Each skill runs its cases sequentially; skills run in parallel
+  await Promise.all([...skillGroups.entries()].map(async ([skillId, skillTasks]) => {
+    logService.info('test-service', 'Skill stream started', {
+      projectId, skillId, taskCount: skillTasks.length,
+    })
+
+    for (const task of skillTasks) {
+      if (state.status === 'paused' || state.status === 'interrupted') break
+
+      // Skip already-processed tasks — enables idempotent resume
+      if (fileService.readJson(task.resultPath)) continue
+
+      const resultRecord = await _executeTask(task, projectPath, config)
+
+      if (resultRecord.status === 'completed') state.completedTasks++
+      else state.failedTasks++
+
+      _saveCheckpoint(projectPath, state)
+
+      if (onProgress) {
+        onProgress({
+          projectId,
+          completedTasks: state.completedTasks,
+          totalTasks:     state.tasks.length,
+          failedTasks:    state.failedTasks,
+          lastResult: {
+            skillId: task.skillRef.ref_id,
+            caseId:  task.caseItem.case_id,
+            status:  resultRecord.status,
+            score:   resultRecord.scores ? resultRecord.scores.total : undefined,
+          },
+          projectStatus: 'running',
+        })
+      }
+    }
+
+    logService.info('test-service', 'Skill stream completed', { projectId, skillId })
+  }))
+
+  // All skill streams finished — either all done, or paused/stopped
   if (state.status !== 'paused' && state.status !== 'interrupted') {
     state.status = 'completed'
 
     const configPath = path.join(projectPath, 'config.json')
     const cfg = fileService.readJson(configPath)
     if (cfg) {
-      cfg.status     = 'completed'
-      cfg.progress   = {
+      cfg.status   = 'completed'
+      cfg.progress = {
         total_tasks:     state.tasks.length,
         completed_tasks: state.completedTasks,
         failed_tasks:    state.failedTasks,
-        last_checkpoint: state.currentIndex,
+        last_checkpoint: state.completedTasks + state.failedTasks,
       }
       cfg.updated_at = new Date().toISOString()
       fileService.writeJson(configPath, cfg)
@@ -419,7 +441,6 @@ async function startTest(projectId, { onProgress } = {}) {
   const state = {
     status:         'running',
     tasks,
-    currentIndex:   0,
     completedTasks: 0,
     failedTasks:    0,
   }
@@ -459,14 +480,14 @@ function pauseTest(projectId) {
         total_tasks:     state.tasks.length,
         completed_tasks: state.completedTasks,
         failed_tasks:    state.failedTasks,
-        last_checkpoint: state.currentIndex,
+        last_checkpoint: state.completedTasks + state.failedTasks,
       }
       cfg.updated_at = new Date().toISOString()
       fileService.writeJson(configPath, cfg)
     }
   }
 
-  return { paused: true, checkpoint: String(state.currentIndex) }
+  return { paused: true, checkpoint: String(state.completedTasks + state.failedTasks) }
 }
 
 /**
@@ -478,14 +499,14 @@ async function resumeTest(projectId, { onProgress } = {}) {
     throw { code: 'NOT_PAUSED', message: 'No paused test for this project' }
   }
   state.status = 'running'
-  logService.info('test-service', 'Test resumed', { projectId, remainingTasks: state.tasks.length - state.currentIndex })
+  const remaining = state.tasks.length - state.completedTasks - state.failedTasks
+  logService.info('test-service', 'Test resumed', { projectId, remainingTasks: remaining })
 
   const found = _findProjectDir(projectId)
   if (!found) throw { code: 'NOT_FOUND' }
   const { fullPath: projectPath } = found
 
   const config = fileService.readJson(path.join(projectPath, 'config.json'))
-  const remaining = state.tasks.length - state.currentIndex
 
   const configPath = path.join(projectPath, 'config.json')
   config.status     = 'running'
@@ -519,7 +540,7 @@ function stopTest(projectId) {
         total_tasks:     state.tasks.length,
         completed_tasks: state.completedTasks,
         failed_tasks:    state.failedTasks,
-        last_checkpoint: state.currentIndex,
+        last_checkpoint: state.completedTasks + state.failedTasks,
       }
       cfg.updated_at = new Date().toISOString()
       fileService.writeJson(configPath, cfg)
@@ -548,18 +569,11 @@ function getProgress(projectId) {
     }
   }
 
-  const currentTask = state.tasks[state.currentIndex]
   return {
     status:         state.status,
     totalTasks:     state.tasks.length,
     completedTasks: state.completedTasks,
     failedTasks:    state.failedTasks,
-    currentTask: currentTask ? {
-      skillId:   currentTask.skillRef.ref_id,
-      skillName: currentTask.skillRef.name,
-      caseId:    currentTask.caseItem.case_id,
-      caseName:  (currentTask.caseItem.input || '').slice(0, 50),
-    } : undefined,
   }
 }
 

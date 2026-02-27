@@ -2,10 +2,11 @@
 
 /**
  * test-service.test.js
- * TDD Test Cases: UC6-1 through UC6-4
+ * TDD Test Cases: UC6-1 through UC6-5
  *
- * Tests serial execution, fault tolerance, structured result storage,
- * and pause/resume. Uses real filesystem (tmpDir) + mocked cliService.
+ * Tests parallel per-skill execution, fault tolerance, structured result
+ * storage, pause/resume, and multi-skill workingDir isolation.
+ * Uses real filesystem (tmpDir) + mocked cliService.
  */
 
 const path = require('path')
@@ -166,9 +167,9 @@ function runAndWait(projectId, opts = {}) {
   })
 }
 
-// ─── UC6-1: Serial execution ───────────────────────────────────────────────
+// ─── UC6-1: Parallel execution (single skill) ─────────────────────────────
 
-describe('UC6-1: startTest executes all skill×case tasks serially', () => {
+describe('UC6-1: startTest executes all skill×case tasks (parallel per skill)', () => {
   test('runs all tasks and writes result files for each case', async () => {
     const { projectId, projectPath } = createTestProject('uc6-1a', 2)
     setupMocks(['success', 'success'])
@@ -481,5 +482,136 @@ describe('exportResults writes results to file', () => {
     const content = fs.readFileSync(destPath, 'utf-8')
     expect(content).toContain('case_id')
     expect(content).toContain('scores.total')
+  })
+})
+
+// ─── Two-skill project factory ────────────────────────────────────────────
+
+/**
+ * Create a project with two skills sharing one baseline.
+ * projectKey must be unique per test.
+ */
+function createTwoSkillProject(projectKey, numCases = 2) {
+  const projectId  = `proj-${projectKey}`
+  const projectDir = `project_${projectKey}`
+  const projectPath = path.join(tmpDir, 'projects', projectDir)
+
+  // Skill AA
+  const skillDirA = 'skill_aa_v1'
+  fileService.ensureDir(path.join(projectPath, 'skills', skillDirA))
+  fileService.writeText(
+    path.join(projectPath, 'skills', skillDirA, 'content.txt'),
+    'You are skill A.',
+  )
+
+  // Skill BB
+  const skillDirB = 'skill_bb_v1'
+  fileService.ensureDir(path.join(projectPath, 'skills', skillDirB))
+  fileService.writeText(
+    path.join(projectPath, 'skills', skillDirB, 'content.txt'),
+    'You are skill B.',
+  )
+
+  // Shared baseline
+  const baselineDir = 'baseline_test_v1'
+  fileService.ensureDir(path.join(projectPath, 'baselines', baselineDir))
+  const cases = Array.from({ length: numCases }, (_, i) => ({
+    case_id:         `case_00${i + 1}`,
+    input:           `Write task ${i + 1}`,
+    expected_output: `Expected output for task ${i + 1}`,
+  }))
+  fileService.writeJson(
+    path.join(projectPath, 'baselines', baselineDir, 'cases.json'),
+    { cases },
+  )
+
+  fileService.ensureDir(path.join(projectPath, 'results'))
+  fileService.writeJson(path.join(projectPath, 'config.json'), {
+    id:          projectId,
+    name:        'Two-Skill Project',
+    description: '',
+    status:      'pending',
+    created_at:  new Date().toISOString(),
+    updated_at:  new Date().toISOString(),
+    skills: [
+      { ref_id: 'skill-aa', name: 'Skill AA', version: 'v1', local_path: `skills/${skillDirA}` },
+      { ref_id: 'skill-bb', name: 'Skill BB', version: 'v1', local_path: `skills/${skillDirB}` },
+    ],
+    baselines: [{
+      ref_id:    'baseline-a',
+      name:      'Baseline A',
+      version:   'v1',
+      local_path: `baselines/${baselineDir}`,
+    }],
+    cli_config: {
+      model:           'claude-opus-4-6',
+      timeout_seconds: 30,
+      retry_count:     1,
+      extra_flags:     [],
+    },
+    progress: {
+      total_tasks:     numCases * 2,
+      completed_tasks: 0,
+      failed_tasks:    0,
+      last_checkpoint: null,
+    },
+  })
+
+  return { projectId, projectPath }
+}
+
+/**
+ * Set up unlimited invokeCli mocks (for parallel tests where call order varies).
+ */
+function setupGenericMocks() {
+  jest.spyOn(cliService, 'invokeCli')
+    .mockResolvedValue({ result: 'mock output', duration_ms: 100 })
+  jest.spyOn(cliService, 'getCliVersion').mockResolvedValue('1.2.0')
+  jest.spyOn(cliService, 'parseStructuredOutput').mockReturnValue({
+    scores: MOCK_SCORES, reasoning: 'good job',
+  })
+}
+
+// ─── UC6-5: Multi-skill parallel execution ────────────────────────────────
+
+describe('UC6-5: multi-skill parallel execution', () => {
+  test('all result files are written for each skill × case combination', async () => {
+    const { projectId, projectPath } = createTwoSkillProject('uc6-5a', 2)
+    setupGenericMocks()
+
+    const finalData = await runAndWait(projectId)
+
+    expect(finalData.completedTasks).toBe(4)
+    expect(finalData.failedTasks).toBe(0)
+    expect(finalData.projectStatus).toBe('completed')
+
+    // Skill AA results
+    expect(fs.existsSync(path.join(projectPath, 'results', 'skill_aa_v1', 'case_001.json'))).toBe(true)
+    expect(fs.existsSync(path.join(projectPath, 'results', 'skill_aa_v1', 'case_002.json'))).toBe(true)
+    // Skill BB results
+    expect(fs.existsSync(path.join(projectPath, 'results', 'skill_bb_v1', 'case_001.json'))).toBe(true)
+    expect(fs.existsSync(path.join(projectPath, 'results', 'skill_bb_v1', 'case_002.json'))).toBe(true)
+  })
+
+  test('each skill gets an isolated workingDir under .claude/', async () => {
+    const { projectId, projectPath } = createTwoSkillProject('uc6-5b', 1)
+    setupGenericMocks()
+
+    await runAndWait(projectId)
+
+    // ref_id 'skill-aa'.slice(0,8) = 'skill-aa' → .claude/skill_skill-aa
+    expect(fs.existsSync(path.join(projectPath, '.claude', 'skill_skill-aa'))).toBe(true)
+    // ref_id 'skill-bb'.slice(0,8) = 'skill-bb' → .claude/skill_skill-bb
+    expect(fs.existsSync(path.join(projectPath, '.claude', 'skill_skill-bb'))).toBe(true)
+  })
+
+  test('invokeCli called (exec + score) per task: 2 skills × 2 cases = 8 total calls', async () => {
+    const { projectId } = createTwoSkillProject('uc6-5c', 2)
+    setupGenericMocks()
+
+    await runAndWait(projectId)
+
+    // 2 skills × 2 cases × (1 exec + 1 score) = 8 calls
+    expect(cliService.invokeCli).toHaveBeenCalledTimes(8)
   })
 })

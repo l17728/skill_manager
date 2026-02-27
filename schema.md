@@ -383,7 +383,7 @@
 | `cli_config.extra_flags` | array | 否 | 附加 CLI 参数，默认空数组 |
 | `context_config.token_threshold` | number | 是 | 触发压缩的 token 估算阈值 |
 | `progress.total_tasks` | number | 是 | 总任务数 = skills数 × cases数 |
-| `progress.last_checkpoint` | string\|null | 是 | 上次完成的任务标识，格式 `{skill_id}/{case_id}`，用于断点续跑 |
+| `progress.last_checkpoint` | number\|null | 是 | 已完成任务数（completed_tasks + failed_tasks），用于断点续跑进度显示 |
 | `original_skill_ids` | string[] | 否 | 项目创建时选择的 Skill UUID 列表，迭代期间保持不变用于参照分析 |
 | `iteration_config` | object | 否 | AEIO 迭代默认参数；实际运行参数由 `iteration:start` 覆盖 |
 

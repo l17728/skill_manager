@@ -793,13 +793,6 @@ interface PaginationResult<T> {
     totalTasks: number
     completedTasks: number
     failedTasks: number
-    currentTask?: {
-      skillId: string
-      skillName: string
-      caseId: string
-      caseName: string
-    }
-    estimatedRemainingMs?: number
   }
 }
 ```

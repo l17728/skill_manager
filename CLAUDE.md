@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 10 modules across 5 implementation phases are fully implemented with **266 unit tests + 18 e2e tests passing**.
+**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 10 modules across 5 implementation phases are fully implemented with **269 unit tests + 19 e2e tests passing**.
 
 ### Specification Documents (read before modifying any module)
 
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev      # Launch Electron app (development mode, --dev flag)
 npm start        # Launch Electron app (production mode)
-npm test         # Run all 266 Jest unit tests
+npm test         # Run all 269 Jest unit tests
 npm run test:e2e # Run Playwright e2e tests (launches real Electron; port 9222 must be free)
 npm run test:watch    # Jest in watch mode
 npm run test:coverage # Jest with coverage report
@@ -99,7 +99,7 @@ main/
     cli-events.js          # EventEmitter for CLI status:change events
     session-service.js     # Claude session lifecycle management
     context-service.js     # Context window management, token counting
-    test-service.js        # Comparative test run orchestration
+    test-service.js        # Comparative test run orchestration (parallel per-skill)
     analysis-service.js    # Difference analysis, advantage segment extraction
     recompose-service.js   # Skill recomposition from advantage segments
     iteration-service.js   # Iteration loop: recompose → test → analyze
@@ -298,7 +298,7 @@ UI exposes three modes: **Standard** (beamWidth=1), **Explore** (beamWidth=2, no
 
 - **`recompose:save`** expects `{ projectId, content, meta: { name, purpose, provider } }` — not flat fields.
 - **`skill:autotag:trigger`** and **`baseline:autotag:trigger`** return `{ taskId }` immediately; completion arrives via push event `autoTag:progress:update`.
-- **`test:start`** returns `{ started: true }`; progress via `test:progress:update` (includes `projectStatus` field); when `projectStatus === 'completed'` the test run is done — there is no separate `test:completed` event.
+- **`test:start`** returns `{ started: true }`; progress via `test:progress:update` (includes `projectStatus` field); when `projectStatus === 'completed'` the test run is done — there is no separate `test:completed` event. Skills run in parallel; cases within each skill are sequential. Each skill gets an isolated workingDir under `.claude/skill_<8chars>/`.
 
 ### Renderer Event Handler Pattern (CSP)
 
