@@ -78,11 +78,21 @@ function createTestWorkspace(opts = {}) {
     }
   }
 
-  console.log(`[workspace-factory] Workspace ready — skills: ${opts.skills ? opts.skills.length : 0}, baselines: ${opts.baselines ? opts.baselines.length : 0}`)
+  // Seed pre-built projects (status, analysis/iteration reports, summary)
+  const projectIds = {}
+  if (opts.projects) {
+    for (const project of opts.projects) {
+      const { id } = _seedProject(dir, project)
+      if (project.key) projectIds[project.key] = id
+    }
+  }
+
+  console.log(`[workspace-factory] Workspace ready — skills: ${opts.skills ? opts.skills.length : 0}, baselines: ${opts.baselines ? opts.baselines.length : 0}, projects: ${opts.projects ? opts.projects.length : 0}`)
   return {
     dir,
     skillIds,
     baselineIds,
+    projectIds,
     cleanup() {
       try {
         fs.rmSync(dir, { recursive: true, force: true })
@@ -283,4 +293,96 @@ function _seedBaseline(workspaceDir, baseline) {
   return id
 }
 
-module.exports = { createTestWorkspace, _seedSkill, _seedBaseline }
+/**
+ * Write a pre-built project directory into the workspace.
+ * Useful for testing tab content that requires existing results,
+ * analysis reports, or iteration reports — without running real CLI.
+ *
+ * @typedef {object} ProjectSeed
+ * @property {string} [key]               — Map key for looking up the generated ID
+ * @property {string} [id]                — Explicit project ID (auto-generated if omitted)
+ * @property {string} name
+ * @property {string} [status]            — 'pending' | 'running' | 'completed' | 'interrupted'
+ * @property {Array}  [skills]            — Skill refs: { ref_id, name, version, local_path }
+ * @property {Array}  [baselines]         — Baseline refs: { ref_id, name, version, local_path }
+ * @property {object} [progress]          — { total_tasks, completed_tasks, failed_tasks, last_checkpoint }
+ * @property {object} [cliConfig]         — CLI config override
+ * @property {object} [summary]           — Pre-built results/summary.json content
+ * @property {object} [analysisReport]    — Pre-built analysis_report.json content
+ * @property {object} [iterationReport]   — Pre-built iterations/iteration_report.json content
+ *
+ * @param {string} workspaceDir
+ * @param {ProjectSeed} project
+ * @returns {{ id: string, projectDir: string, projectPath: string }}
+ */
+function _seedProject(workspaceDir, project) {
+  const {
+    id = uuidv4(),
+    name,
+    status = 'pending',
+    skills = [],
+    baselines = [],
+    progress = null,
+    cliConfig = null,
+    summary = null,
+    analysisReport = null,
+    iterationReport = null,
+  } = project
+
+  const now = new Date().toISOString()
+  const projectDir = `project_${id.slice(0, 8)}_${Date.now()}`
+  const projectPath = path.join(workspaceDir, 'projects', projectDir)
+
+  fs.mkdirSync(path.join(projectPath, 'results'), { recursive: true })
+  fs.mkdirSync(path.join(projectPath, '.claude'), { recursive: true })
+
+  const defaultProgress = progress || {
+    total_tasks: 0,
+    completed_tasks: 0,
+    failed_tasks: 0,
+    last_checkpoint: null,
+  }
+
+  fs.writeFileSync(
+    path.join(projectPath, 'config.json'),
+    JSON.stringify({
+      id,
+      name,
+      description: '',
+      status,
+      created_at: now,
+      updated_at: now,
+      skills,
+      baselines,
+      cli_config: cliConfig || { model: 'claude-opus-4-6', timeout_seconds: 60, retry_count: 2, extra_flags: [] },
+      progress: defaultProgress,
+    }, null, 2)
+  )
+
+  if (summary) {
+    fs.writeFileSync(
+      path.join(projectPath, 'results', 'summary.json'),
+      JSON.stringify(summary, null, 2)
+    )
+  }
+
+  if (analysisReport) {
+    fs.writeFileSync(
+      path.join(projectPath, 'analysis_report.json'),
+      JSON.stringify(analysisReport, null, 2)
+    )
+  }
+
+  if (iterationReport) {
+    fs.mkdirSync(path.join(projectPath, 'iterations'), { recursive: true })
+    fs.writeFileSync(
+      path.join(projectPath, 'iterations', 'iteration_report.json'),
+      JSON.stringify(iterationReport, null, 2)
+    )
+  }
+
+  console.log(`[workspace-factory] Seeded project "${name}" → ${projectDir} (${status})`)
+  return { id, projectDir, projectPath }
+}
+
+module.exports = { createTestWorkspace, _seedSkill, _seedBaseline, _seedProject }

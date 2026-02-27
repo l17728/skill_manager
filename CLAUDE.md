@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 10 modules across 5 implementation phases are fully implemented with **269 unit tests + 19 e2e tests passing**.
+**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 10 modules across 5 implementation phases are fully implemented with **269 unit tests + 27 e2e tests passing**.
 
 ### Specification Documents (read before modifying any module)
 
@@ -131,7 +131,7 @@ tests/
     playwright.config.js          # workers:1, timeout:60s, sequential
     helpers/
       app-launcher.js             # spawn Electron + --remote-debugging-port=9222, bind-based port-free check, wait for CDP
-      workspace-factory.js        # createTestWorkspace({ skills, baselines }), _seedSkill(), _seedBaseline()
+      workspace-factory.js        # createTestWorkspace({ skills, baselines, projects }), _seedSkill(), _seedBaseline(), _seedProject()
     pages/
       app-page.js                 # navigation, notify assertions, CLI status
       skill-page.js               # full SkillPage POM (import, select, edit, tag, search, rollback, delete)
@@ -140,7 +140,8 @@ tests/
     specs/
       skill-management.spec.js    # TC-001~TC-008,TC-010 active, TC-009 skipped (needs live CLI)
       baseline-management.spec.js # TC-B-001~TC-B-006 active, TC-B-007 skipped (needs live CLI)
-      project-management.spec.js  # TC-P-001~TC-P-004 active, TC-P-005 skipped (needs live CLI)
+      project-management.spec.js       # TC-P-001~TC-P-004,TC-P-006~TC-P-010 active, TC-P-005 skipped (needs live CLI)
+      project-detail-completed.spec.js # TC-PC-001~TC-PC-003: pre-seeded completed project, no CLI
     action-reference/
       action-reference.json       # function-call-style UI API doc for Claude agent test generation
     nl-test-scripts/

@@ -46,6 +46,16 @@ class ProjectPage {
     this.iterSkillId   = page.locator('#iter-skill-id')
     this.iterMaxRounds = page.locator('#iter-max-rounds')
 
+    // Iteration tab controls
+    this.iterModeSelect = page.locator('#iter-mode')
+
+    // Tab content bodies
+    this.overviewBody   = page.locator('#project-overview-body')
+    this.testResultsBody = page.locator('#test-results-body')
+    this.analysisBody   = page.locator('#analysis-body')
+    this.recomposeBody  = page.locator('#recompose-body')
+    this.iterationBody  = page.locator('#iteration-body')
+
     // Create modal
     this.createModal    = page.locator('#project-create-modal')
     this.projectName    = page.locator('#project-name')
@@ -101,6 +111,24 @@ class ProjectPage {
   async expectDetailShowing(name, { timeout = 8000 } = {}) {
     await expect(this.detailPanel).toBeVisible({ timeout })
     await expect(this.detailName).toHaveText(name, { timeout })
+  }
+
+  /** Verify the test tab is in idle state: Start visible, Pause/Stop/Resume hidden. */
+  async expectTestTabIdle({ timeout = 5000 } = {}) {
+    await expect(this.testStartBtn).toBeVisible({ timeout })
+    await expect(this.testPauseBtn).toBeHidden({ timeout })
+    await expect(this.testStopBtn).toBeHidden({ timeout })
+  }
+
+  /** Search the project list and wait for the list to re-render (debounce = 350ms). */
+  async searchProjects(keyword, { waitMs = 500 } = {}) {
+    await this.searchInput.fill(keyword)
+    await this.page.waitForTimeout(waitMs)
+  }
+
+  /** Assert the project list contains exactly N visible skill-item rows. */
+  async expectProjectCount(n, { timeout = 5000 } = {}) {
+    await expect(this.projectList.locator('.skill-item')).toHaveCount(n, { timeout })
   }
 }
 

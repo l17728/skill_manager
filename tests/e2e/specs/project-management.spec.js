@@ -108,6 +108,82 @@ test.describe('Project Management', () => {
     }
   })
 
+  // ─── TC-P-006: Overview tab content ──────────────────────────────────────────
+
+  test('TC-P-006: overview tab shows skill and baseline names', async () => {
+    await projectPage.selectProject(PROJECT_NAME)
+    await projectPage.switchTab('overview')
+
+    // "Skills (1)" section heading appears
+    await expect(
+      projectPage.overviewBody.getByText('Skills (1)')
+    ).toBeVisible({ timeout: 5000 })
+
+    // Skill name visible in overview
+    await expect(
+      projectPage.overviewBody.getByText('Proj Skill Alpha')
+    ).toBeVisible()
+
+    // "Baselines (1)" section heading appears
+    await expect(
+      projectPage.overviewBody.getByText('Baselines (1)')
+    ).toBeVisible()
+
+    // Baseline name visible in overview
+    await expect(
+      projectPage.overviewBody.getByText('Proj Baseline Alpha')
+    ).toBeVisible()
+  })
+
+  // ─── TC-P-007: Test tab idle state ────────────────────────────────────────────
+
+  test('TC-P-007: test tab shows Start button in idle state', async () => {
+    await projectPage.switchTab('test')
+    await projectPage.expectTestTabIdle()
+  })
+
+  // ─── TC-P-008: Recompose tab empty state ──────────────────────────────────────
+
+  test('TC-P-008: recompose tab shows empty state before execution', async () => {
+    await projectPage.switchTab('recompose')
+    await expect(
+      projectPage.recomposeBody.getByText('Recompose Skill')
+    ).toBeVisible({ timeout: 5000 })
+  })
+
+  // ─── TC-P-009: Iteration tab controls ────────────────────────────────────────
+
+  test('TC-P-009: iteration tab shows mode selector and Start button', async () => {
+    await projectPage.switchTab('iteration')
+    await expect(projectPage.iterModeSelect).toBeVisible({ timeout: 5000 })
+    await expect(projectPage.iterStartBtn).toBeVisible()
+    // Standard mode: advanced row should be hidden
+    await expect(page.locator('#iter-advanced-row')).toBeHidden()
+    // Switching to Explore reveals advanced row
+    await projectPage.iterModeSelect.selectOption('explore')
+    await expect(page.locator('#iter-advanced-row')).toBeVisible()
+    // Restore to standard
+    await projectPage.iterModeSelect.selectOption('standard')
+  })
+
+  // ─── TC-P-010: Search filters project list ────────────────────────────────────
+
+  test('TC-P-010: search by name filters the project list', async () => {
+    // Matching search — project should be visible
+    await projectPage.searchProjects('E2E')
+    await projectPage.expectProjectInList(PROJECT_NAME)
+
+    // Non-matching search — list becomes empty
+    await projectPage.searchProjects('ZZZNOMATCH')
+    await expect(
+      page.locator('#project-list .empty-state')
+    ).toBeVisible({ timeout: 5000 })
+
+    // Clear search — restore list
+    await projectPage.searchProjects('')
+    await projectPage.expectProjectInList(PROJECT_NAME)
+  })
+
   // ─── TC-P-004: Delete project removes from list ───────────────────────────────
 
   test('TC-P-004: delete project — removed from list', async () => {
