@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev      # Launch Electron app (development mode, --dev flag)
 npm start        # Launch Electron app (production mode)
-npm test         # Run all 240 Jest unit tests
+npm test         # Run all 266 Jest unit tests
 npm run test:e2e # Run Playwright e2e tests (launches real Electron; port 9222 must be free)
 npm run test:watch    # Jest in watch mode
 npm run test:coverage # Jest with coverage report
@@ -181,7 +181,7 @@ workspace/
     .claude/              # Project-isolated CLI session
     results/              # Per-skill-version result JSONs + summary.json
     analysis_report.json
-    iterations/           # round_N/config.json + iteration_report.json
+    iterations/           # round_N/config.json + iteration_report.json + exploration_log.json
     logs/
   cli/
     config.json           # Global CLI config (model, timeout, token thresholds)
