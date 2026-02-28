@@ -36,7 +36,7 @@ const INVOKE_CHANNELS = [
 
   'leaderboard:query', 'leaderboard:getTestSummaries', 'leaderboard:export',
 
-  'workspace:init', 'search:global', 'log:query',
+  'workspace:init', 'workspace:saveTemplate', 'search:global', 'log:query',
 ]
 
 // All event channels allowed for on()
@@ -122,7 +122,8 @@ contextBridge.exposeInMainWorld('api', {
 
   // Workspace / global
   workspace: {
-    init: () => ipcRenderer.invoke('workspace:init'),
+    init:         () => ipcRenderer.invoke('workspace:init'),
+    saveTemplate: () => ipcRenderer.invoke('workspace:saveTemplate'),
   },
   search: {
     global: (args) => ipcRenderer.invoke('search:global', args),

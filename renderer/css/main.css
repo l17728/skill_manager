@@ -593,6 +593,31 @@ select.form-input { cursor: pointer; }
 .score-mid { color: var(--warning); }
 .score-lo  { color: var(--error); }
 
+/* ===== P1-1: Project Progress Stepper ===== */
+#project-stepper {
+  display: flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  flex-shrink: 0;
+  gap: 0;
+  font-size: 11px;
+}
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: default;
+}
+.step-item.done   { color: var(--success); }
+.step-item.active { color: var(--accent-light); font-weight: 600; }
+.step-arrow { margin: 0 2px; color: var(--border); }
+
 /* ===== P0-1: Prerequisite Banner ===== */
 .prereq-banner {
   display: flex;

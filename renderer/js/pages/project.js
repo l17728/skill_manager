@@ -17,6 +17,9 @@ const ProjectPage = (() => {
   let iterState           = 'idle'   // idle | running
   let recomposePreview    = null
   let savedRecomposeSkillId = null
+  // P1-1: step completion flags (reset on project switch)
+  let _stepAnalysisDone   = false
+  let _stepRecomposeDone  = false
 
   // IPC unsubscribers
   let unsubTestProgress    = null
@@ -97,6 +100,8 @@ const ProjectPage = (() => {
     savedRecomposeSkillId = null
     testState             = 'idle'
     iterState             = 'idle'
+    _stepAnalysisDone     = false
+    _stepRecomposeDone    = false
 
     document.querySelectorAll('#project-list .skill-item').forEach(el => {
       el.classList.toggle('selected', el.dataset.id === projectId)
@@ -119,6 +124,7 @@ const ProjectPage = (() => {
     document.getElementById('ptab-overview').classList.add('active')
 
     renderOverview()
+    _renderProgressStepper()
     _renderAux()
     _subscribeEvents()
   }
@@ -222,6 +228,30 @@ const ProjectPage = (() => {
     `
   }
 
+  // P1-1: Progress stepper ───────────────────────────────────────────────────
+
+  function _renderProgressStepper() {
+    const el = document.getElementById('project-stepper')
+    if (!el) return
+    const status   = currentProjectConfig?.status || 'pending'
+    const testDone = status === 'completed'
+    const testActive = (status === 'running' || testState === 'running')
+    const steps = [
+      { label: '① Test',      done: testDone,           active: testActive && !testDone },
+      { label: '② Analysis',  done: _stepAnalysisDone,  active: testDone && !_stepAnalysisDone },
+      { label: '③ Recompose', done: _stepRecomposeDone, active: _stepAnalysisDone && !_stepRecomposeDone },
+      { label: '④ Iteration', done: false,              active: _stepRecomposeDone },
+    ]
+    const html = steps.map((s, i) => {
+      const cls = s.done ? 'done' : s.active ? 'active' : ''
+      const icon = s.done ? ' ✓' : ''
+      return (i > 0 ? `<span class="step-arrow">→</span>` : '') +
+             `<div class="step-item ${cls}">${s.label}${icon}</div>`
+    }).join('')
+    el.innerHTML = html
+    el.style.display = 'flex'
+  }
+
   function _renderAux() {
     document.getElementById('project-aux-body').innerHTML = `
       <div style="padding:12px">
@@ -294,6 +324,8 @@ const ProjectPage = (() => {
       testState = 'idle'
       _updateTestButtons()
       _loadTestResults()
+      if (currentProjectConfig) currentProjectConfig.status = 'completed'
+      _renderProgressStepper()
     }
   }
 
@@ -314,7 +346,9 @@ const ProjectPage = (() => {
           <div style="font-size:11px;color:var(--text-muted)">${r.skill_version} · ${r.completed_cases} cases</div>
         </div>
         <div class="score-${r.avg_score >= 80 ? 'hi' : r.avg_score >= 60 ? 'mid' : 'lo'}" style="font-size:16px;font-weight:700">${r.avg_score}</div>
+        <button class="btn btn-secondary btn-sm" data-skill-id="${r.skill_id}" data-expand-cases style="margin-left:6px;font-size:10px">用例 ▾</button>
       </div>
+      <div id="cases-expand-${window.escHtml(r.skill_id)}" style="display:none;padding:6px 12px 0 12px"></div>
     `).join('')
 
     // Layer 2: 6-dimension comparison table
@@ -359,6 +393,46 @@ const ProjectPage = (() => {
         ${dimTable}
       </div>
     `
+
+    // P1-4: Wire expand-cases buttons (CSP-compliant: addEventListener after innerHTML)
+    body.querySelectorAll('[data-expand-cases]').forEach(btn => {
+      btn.addEventListener('click', () => _toggleCaseExpand(btn.dataset.skillId, btn))
+    })
+  }
+
+  async function _toggleCaseExpand(skillId, btn) {
+    const panel = document.getElementById(`cases-expand-${skillId}`)
+    if (!panel) return
+    if (panel.style.display !== 'none') {
+      panel.style.display = 'none'
+      btn.textContent = '用例 ▾'
+      return
+    }
+    btn.textContent = '用例 ▴'
+    panel.style.display = ''
+    if (panel.dataset.loaded) return
+    panel.dataset.loaded = '1'
+    panel.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:4px 0">Loading…</div>`
+
+    const res = await window.api.test.getResults({ projectId: currentProjectId, skillId, pageSize: 50 })
+    if (!res.success || !res.data.items.length) {
+      panel.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:4px 0">No case records found</div>`
+      return
+    }
+    const rows = res.data.items.map(c => {
+      const ok = c.status === 'completed'
+      const icon = ok ? `<span style="color:var(--success)">✓</span>` : `<span style="color:var(--error)">✗</span>`
+      const score = c.scores?.total != null ? `<span class="score-${c.scores.total >= 80 ? 'hi' : c.scores.total >= 60 ? 'mid' : 'lo'}" style="font-weight:600">${c.scores.total}</span>` : `<span style="color:var(--text-muted)">—</span>`
+      const errRow = (!ok && c.error) ? `
+        <div style="margin:4px 0 2px 16px;padding:4px 8px;background:rgba(248,113,113,0.08);border-left:2px solid var(--error);border-radius:2px;font-size:11px;color:var(--error);word-break:break-all">${window.escHtml(String(c.error).slice(0, 200))}</div>` : ''
+      return `
+        <div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px">
+          ${icon}
+          <span style="flex:1;color:var(--text-secondary)">${window.escHtml(c.case_id || '')}</span>
+          ${score}
+        </div>${errRow}`
+    }).join('')
+    panel.innerHTML = `<div style="border-top:1px solid var(--border);padding:6px 0 10px 0">${rows}</div>`
   }
 
   async function _startTest() {
@@ -423,6 +497,8 @@ const ProjectPage = (() => {
       body.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div class="title">No analysis report</div><div class="sub">Click "Run Analysis" to generate</div></div>`
       return
     }
+    _stepAnalysisDone = true
+    _renderProgressStepper()
     _renderAnalysisReport(res.data)
   }
 
@@ -531,6 +607,8 @@ const ProjectPage = (() => {
   function renderRecomposePreview(preview) {
     if (!preview) return
     recomposePreview = preview
+    _stepRecomposeDone = true
+    _renderProgressStepper()
     const body = document.getElementById('recompose-body')
     body.innerHTML = `
       <div style="padding:12px">

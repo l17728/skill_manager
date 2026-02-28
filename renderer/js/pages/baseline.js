@@ -351,6 +351,19 @@ const BaselinePage = (() => {
     if (clearBtn) clearBtn.addEventListener('click', clearAllFilters)
   }
 
+  // ─── P1-2: Autocomplete datalist for Purpose / Provider ──────────────────
+
+  async function _fillPurposeProviderDatalist() {
+    const res = await window.api.baseline.list({ pageSize: 200 })
+    if (!res.success) return
+    const purposes  = [...new Set((res.data.items || []).map(b => b.purpose).filter(Boolean))]
+    const providers = [...new Set((res.data.items || []).map(b => b.provider).filter(Boolean))]
+    const pdl = document.getElementById('baseline-purpose-datalist')
+    const rdl = document.getElementById('baseline-provider-datalist')
+    if (pdl) pdl.innerHTML = purposes.map(v => `<option value="${window.escHtml(v)}">`).join('')
+    if (rdl) rdl.innerHTML = providers.map(v => `<option value="${window.escHtml(v)}">`).join('')
+  }
+
   // ─── Init ──────────────────────────────────────────────────────────────────
 
   function init() {
@@ -360,12 +373,21 @@ const BaselinePage = (() => {
         const el = document.getElementById(id)
         if (el) el.value = ''
       })
+      // P1-2: Populate autocomplete datalists
+      _fillPurposeProviderDatalist()
       window.openModal('baseline-import-modal')
     })
 
     document.getElementById('baseline-import-confirm').addEventListener('click', confirmImport)
     document.getElementById('baseline-add-case-btn').addEventListener('click', addCaseDialog)
     document.getElementById('baseline-autotag-btn').addEventListener('click', triggerAutoTag)
+
+    // P1-3: Download cases.json template
+    document.getElementById('baseline-download-template-btn').addEventListener('click', async () => {
+      const res = await window.api.workspace.saveTemplate()
+      if (!res.success) { window.notify('模板保存失败', 'error'); return }
+      window.notify(`模板已保存到：${res.data.path}`, 'success')
+    })
 
     const searchEl = document.getElementById('baseline-search')
     searchEl.addEventListener('input', () => {

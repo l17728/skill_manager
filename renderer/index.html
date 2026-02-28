@@ -161,6 +161,9 @@
             <button class="detail-tab" data-ptab="iteration">Iteration</button>
           </div>
 
+          <!-- P1-1: Progress stepper -->
+          <div id="project-stepper" style="display:none"></div>
+
           <!-- Overview pane -->
           <div class="project-tab-pane active" id="ptab-overview">
             <div class="detail-scroll" id="project-overview-body"></div>
@@ -337,7 +340,7 @@
       </div>
       <div class="form-field">
         <label>Purpose * (directory category)</label>
-        <input class="form-input" id="skill-import-purpose" placeholder="e.g. code_generate">
+        <input class="form-input" id="skill-import-purpose" placeholder="e.g. code_generate" list="skill-purpose-datalist" autocomplete="off">
       </div>
       <!-- Purpose merge suggestion banner (shown dynamically) -->
       <div id="skill-purpose-suggestion" style="display:none;margin-bottom:8px;padding:10px;background:rgba(124,106,247,0.1);border:1px solid var(--accent);border-radius:6px;font-size:12px">
@@ -350,7 +353,7 @@
       </div>
       <div class="form-field">
         <label>Provider * (directory identifier)</label>
-        <input class="form-input" id="skill-import-provider" placeholder="e.g. provider_internal">
+        <input class="form-input" id="skill-import-provider" placeholder="e.g. provider_internal" list="skill-provider-datalist" autocomplete="off">
       </div>
       <div class="form-field">
         <label>Description</label>
@@ -467,11 +470,11 @@
       </div>
       <div class="form-field">
         <label>Purpose *</label>
-        <input class="form-input" id="baseline-import-purpose" placeholder="e.g. code_generate_test">
+        <input class="form-input" id="baseline-import-purpose" placeholder="e.g. code_generate_test" list="baseline-purpose-datalist" autocomplete="off">
       </div>
       <div class="form-field">
         <label>Provider *</label>
-        <input class="form-input" id="baseline-import-provider" placeholder="e.g. provider_internal">
+        <input class="form-input" id="baseline-import-provider" placeholder="e.g. provider_internal" list="baseline-provider-datalist" autocomplete="off">
       </div>
       <!-- Manual -->
       <div class="tab-content active" id="tab-manual">
@@ -480,7 +483,9 @@
       <!-- File -->
       <div class="tab-content" id="tab-bfile">
         <div class="form-field">
-          <label>File Path (cases.json format)</label>
+          <label>File Path (cases.json format)
+            <button class="btn btn-secondary btn-sm" id="baseline-download-template-btn" style="margin-left:8px;font-size:11px">↓ 下载 JSON 模板</button>
+          </label>
           <input class="form-input" id="baseline-import-filepath" placeholder="Absolute path to cases.json">
         </div>
       </div>
@@ -581,5 +586,11 @@
 <script src="js/pages/project.js"></script>
 <script src="js/pages/rankings.js"></script>
 <script src="js/app.js"></script>
+
+<!-- P1-2: Datalists for Purpose/Provider autocomplete -->
+<datalist id="skill-purpose-datalist"></datalist>
+<datalist id="skill-provider-datalist"></datalist>
+<datalist id="baseline-purpose-datalist"></datalist>
+<datalist id="baseline-provider-datalist"></datalist>
 </body>
 </html>

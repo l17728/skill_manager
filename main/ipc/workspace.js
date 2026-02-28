@@ -60,4 +60,17 @@ module.exports = function registerWorkspaceHandlers() {
   ipcMain.handle('log:query', wrapHandler(async (args) => {
     return logService.queryLogs(args)
   }))
+
+  // P1-3: Save a baseline cases.json template to the workspace root
+  ipcMain.handle('workspace:saveTemplate', wrapHandler(async () => {
+    const path = require('path')
+    const dest = path.join(workspaceService.paths.workspace(), 'cases_template.json')
+    const template = [
+      { name: '用例1', input: '你的输入内容（问题或指令）', expected_output: '期望的正确输出（参考答案）' },
+      { name: '用例2', input: '第二道题的输入', expected_output: '第二道题的期望输出' },
+    ]
+    fileService.writeJson(dest, template)
+    logService.info('workspace', 'cases template saved', { dest })
+    return { path: dest }
+  }))
 }

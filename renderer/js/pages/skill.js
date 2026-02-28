@@ -537,6 +537,19 @@ const SkillPage = (() => {
     preview.style.top = Math.min(y, window.innerHeight - 200) + 'px'
   }
 
+  // ─── P1-2: Autocomplete datalist for Purpose / Provider ──────────────────
+
+  async function _fillPurposeProviderDatalist() {
+    const res = await window.api.skill.list({ pageSize: 200 })
+    if (!res.success) return
+    const purposes  = [...new Set((res.data.items || []).map(s => s.purpose).filter(Boolean))]
+    const providers = [...new Set((res.data.items || []).map(s => s.provider).filter(Boolean))]
+    const pdl = document.getElementById('skill-purpose-datalist')
+    const rdl = document.getElementById('skill-provider-datalist')
+    if (pdl) pdl.innerHTML = purposes.map(v => `<option value="${window.escHtml(v)}">`).join('')
+    if (rdl) rdl.innerHTML = providers.map(v => `<option value="${window.escHtml(v)}">`).join('')
+  }
+
   // ─── Init ──────────────────────────────────────────────────────────────────
 
   function init() {
@@ -552,6 +565,8 @@ const SkillPage = (() => {
       // Hide suggestion banner and reset state
       document.getElementById('skill-purpose-suggestion').style.display = 'none'
       _suggestedPurpose = null
+      // P1-2: Populate autocomplete datalists
+      _fillPurposeProviderDatalist()
       window.openModal('skill-import-modal')
     })
 
