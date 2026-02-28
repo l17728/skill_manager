@@ -1,6 +1,6 @@
 # SkillManager 用户手册
 
-**版本 2.1 · 适用平台：Windows 10 / Windows 11**
+**版本 2.2 · 适用平台：Windows 10 / Windows 11**
 
 > 本手册面向**完全没有接触过本软件**的新用户，无需阅读其他文档，按照本手册即可完成安装、配置并独立使用所有功能。
 
@@ -1022,7 +1022,12 @@ xcopy /E /I /Y "D:\我的备份\skillmanager_backup_20240601" "%APPDATA%\SkillMa
 **解决步骤**：
 1. 确认 CLI 状态为绿色（在线）
 2. 打开浏览器访问 `console.anthropic.com` 确认网络正常
-3. 查看最新日志：打开 `%APPDATA%\SkillManager\workspace\logs\` 中最新的 `.jsonl` 文件，搜索 `error` 关键词找到错误原因
+3. 查看 Test 标签页中的错误提示——v2.2 起，失败信息会直接显示在进度区域，包含具体错误码：
+   - `CLI_TIMEOUT`：请求超时，检查网络或稍后重试
+   - `CLI_NOT_AVAILABLE`：CLI 未找到或无法启动，参考问题 2 修复
+   - `RATE_LIMITED`：API 调用频率超限，等待几分钟后重试
+   - `CLI_EXECUTION_ERROR`：CLI 内部错误，查看日志了解详情
+4. 查看最新日志：打开 `%APPDATA%\SkillManager\workspace\logs\` 中最新的 `.jsonl` 文件，搜索 `error` 关键词找到错误原因
 
 ---
 
@@ -1171,4 +1176,4 @@ Provider: `internal`
 
 ---
 
-*文档版本：2.1 · 最后更新：2026-02-28*
+*文档版本：2.2 · 最后更新：2026-02-28*
