@@ -6,6 +6,18 @@ const { registerAllHandlers } = require('./ipc/index')
 const workspaceService = require('./services/workspace-service')
 const logService = require('./services/log-service')
 
+// Disable GPU hardware acceleration to prevent silent renderer crashes on
+// systems with incompatible GPU drivers (common on Windows 11 with Electron 28).
+app.disableHardwareAcceleration()
+
+// Enforce single-instance: if another instance is already running, focus it
+// and quit this one. Without this, a zombie process from a prior crash can
+// make the second launch appear to "do nothing".
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) {
+  app.quit()
+}
+
 let mainWindow
 
 // ─── Process-level error handlers (must be registered as early as possible) ──
@@ -38,6 +50,17 @@ process.on('SIGINT', () => {
   app.quit()
 })
 
+// ─── Second-instance handler ─────────────────────────────────────────────────
+
+app.on('second-instance', () => {
+  // A second instance was launched — focus the existing window
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+    mainWindow.moveTop()
+  }
+})
+
 // ─── Window ───────────────────────────────────────────────────────────────────
 
 function createWindow() {
@@ -54,9 +77,20 @@ function createWindow() {
     },
     title: 'Skill Manager',
     show: false,
+    backgroundColor: '#1a1a2e',  // dark background to avoid white flash
   })
 
+  // Fallback: if ready-to-show never fires (e.g. renderer hangs), show the
+  // window after 15 s so the user at least sees *something* instead of silence.
+  const showFallback = setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      logService.warn('main', 'ready-to-show did not fire within 15s — forcing window show')
+      mainWindow.show()
+    }
+  }, 15000)
+
   mainWindow.once('ready-to-show', () => {
+    clearTimeout(showFallback)
     mainWindow.show()
     mainWindow.focus()
     mainWindow.moveTop()

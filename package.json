@@ -27,8 +27,27 @@
   "build": {
     "appId": "com.skillmanager.app",
     "productName": "SkillManager",
+    "files": [
+      "**/*",
+      "!tests/**",
+      "!dist/**",
+      "!docs/**",
+      "!scripts/**",
+      "!workspace/**",
+      "!*.md",
+      "!.git/**",
+      "!.claude/**"
+    ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": null,
+      "uninstallerIcon": null
     },
     "directories": {
       "output": "dist"
