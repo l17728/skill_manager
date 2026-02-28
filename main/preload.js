@@ -15,7 +15,7 @@ const INVOKE_CHANNELS = [
   'baseline:autoTag:trigger', 'baseline:autoTag:triggerBatch', 'baseline:autoTag:review',
   'baseline:version:list', 'baseline:version:diff', 'baseline:version:rollback',
 
-  'project:create', 'project:list', 'project:get', 'project:export', 'project:delete',
+  'project:create', 'project:list', 'project:get', 'project:export', 'project:delete', 'project:clone',
 
   'cli:checkAvailable', 'cli:getConfig', 'cli:updateConfig',
   'cli:session:list', 'cli:session:close', 'cli:session:export',
@@ -36,7 +36,7 @@ const INVOKE_CHANNELS = [
 
   'leaderboard:query', 'leaderboard:getTestSummaries', 'leaderboard:export',
 
-  'workspace:init', 'workspace:saveTemplate', 'search:global', 'log:query',
+  'workspace:init', 'workspace:saveTemplate', 'workspace:backup', 'search:global', 'log:query',
 ]
 
 // All event channels allowed for on()
@@ -106,6 +106,7 @@ contextBridge.exposeInMainWorld('api', {
     get:    (args) => ipcRenderer.invoke('project:get', args),
     export: (args) => ipcRenderer.invoke('project:export', args),
     delete: (args) => ipcRenderer.invoke('project:delete', args),
+    clone:  (args) => ipcRenderer.invoke('project:clone', args),
   },
 
   // CLI module
@@ -124,6 +125,7 @@ contextBridge.exposeInMainWorld('api', {
   workspace: {
     init:         () => ipcRenderer.invoke('workspace:init'),
     saveTemplate: () => ipcRenderer.invoke('workspace:saveTemplate'),
+    backup:       (args) => ipcRenderer.invoke('workspace:backup', args),
   },
   search: {
     global: (args) => ipcRenderer.invoke('search:global', args),

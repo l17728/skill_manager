@@ -134,6 +134,7 @@
         <div class="panel-header">
           <span class="panel-title">Projects</span>
           <button class="btn btn-primary btn-sm" id="project-create-btn">+ Create</button>
+          <button class="btn btn-secondary btn-sm" id="project-backup-btn" title="备份所有数据到指定目录">↑ 备份</button>
         </div>
         <div class="search-wrap">
           <input class="search-input" id="project-search" placeholder="Search projects…" type="text">
@@ -149,6 +150,7 @@
         <div id="project-detail" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
           <div class="panel-header">
             <span class="panel-title" id="project-detail-name">—</span>
+            <button class="btn btn-secondary btn-sm" id="project-clone-btn" title="复制项目（相同Skills+Baselines，新名称）">复制</button>
             <button class="btn btn-secondary btn-sm" id="project-export-btn">Export</button>
             <button class="btn btn-danger btn-sm" id="project-delete-btn">Delete</button>
           </div>

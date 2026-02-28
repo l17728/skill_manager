@@ -921,6 +921,27 @@ const ProjectPage = (() => {
     `
   }
 
+  // ─── P3-1: Backup workspace ───────────────────────────────────────────────
+
+  async function backupWorkspace() {
+    const destDir = prompt('请输入备份目标目录（例如：D:\\我的备份）:')
+    if (!destDir) return
+    const res = await window.api.workspace.backup({ destDir: destDir.trim() })
+    if (!res.success) { window.notify('备份失败: ' + res.error?.message, 'error'); return }
+    window.notify('备份成功：' + res.data.path, 'success')
+  }
+
+  // ─── P3-2: Clone project ──────────────────────────────────────────────────
+
+  async function cloneProject() {
+    if (!currentProjectId) return
+    const res = await window.api.project.clone({ projectId: currentProjectId })
+    if (!res.success) { window.notify('复制失败: ' + res.error?.message, 'error'); return }
+    window.notify('项目已复制', 'success')
+    loadList()
+    openDetail(res.data.projectId)
+  }
+
   // ─── Export / Delete ──────────────────────────────────────────────────────
 
   async function exportProject() {
@@ -1000,6 +1021,8 @@ const ProjectPage = (() => {
   function init() {
     document.getElementById('project-create-btn').addEventListener('click', _openCreateModal)
     document.getElementById('project-create-confirm').addEventListener('click', _confirmCreate)
+    document.getElementById('project-backup-btn').addEventListener('click', backupWorkspace)
+    document.getElementById('project-clone-btn').addEventListener('click', cloneProject)
     document.getElementById('project-export-btn').addEventListener('click', exportProject)
     document.getElementById('project-delete-btn').addEventListener('click', deleteProject)
 

@@ -294,3 +294,49 @@ describe('UC3-4: exportProject', () => {
     })
   })
 })
+
+// ─── P3-2: cloneProject ────────────────────────────────────────────────────
+
+describe('cloneProject', () => {
+  let sourceProjectId
+
+  beforeAll(async () => {
+    const res = await projectService.createProject({
+      name: 'OriginalProject',
+      skillIds: [testSkillId],
+      baselineIds: [testBaselineId],
+    })
+    sourceProjectId = res.projectId
+  })
+
+  test('clone returns new projectId different from source', async () => {
+    const res = await projectService.cloneProject(sourceProjectId)
+    expect(res.projectId).toBeDefined()
+    expect(res.projectId).not.toBe(sourceProjectId)
+  })
+
+  test('cloned project has name ending in -副本', async () => {
+    const res = await projectService.cloneProject(sourceProjectId)
+    const found = projectService.findProjectDir(res.projectId)
+    const config = require('fs').readFileSync(require('path').join(found.fullPath, 'config.json'), 'utf-8')
+    const cfg = JSON.parse(config)
+    expect(cfg.name).toBe('OriginalProject-副本')
+  })
+
+  test('cloned project starts with pending status', async () => {
+    const res = await projectService.cloneProject(sourceProjectId)
+    const cfg = projectService.getProject(res.projectId).config
+    expect(cfg.status).toBe('pending')
+  })
+
+  test('cloned project has same skill and baseline refs', async () => {
+    const res = await projectService.cloneProject(sourceProjectId)
+    const cfg = projectService.getProject(res.projectId).config
+    expect(cfg.skills[0].ref_id).toBe(testSkillId)
+    expect(cfg.baselines[0].ref_id).toBe(testBaselineId)
+  })
+
+  test('cloneProject throws NOT_FOUND for unknown projectId', async () => {
+    await expect(projectService.cloneProject('nonexistent-uuid')).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
+})

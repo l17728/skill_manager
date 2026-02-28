@@ -24,4 +24,9 @@ module.exports = function registerProjectHandlers(mainWindow) {
   ipcMain.handle('project:delete', wrapHandler(async ({ projectId }) => {
     return projectService.deleteProject(projectId)
   }))
+
+  // P3-2: Clone project (same skills+baselines, fresh name+status)
+  ipcMain.handle('project:clone', wrapHandler(async ({ projectId }) => {
+    return projectService.cloneProject(projectId)
+  }))
 }

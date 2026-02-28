@@ -238,8 +238,37 @@ function deleteProject(projectId) {
   return { deleted: true }
 }
 
+/**
+ * Clone a project — same skills + baselines, fresh name + pending status.
+ * P3-2.
+ */
+async function cloneProject(projectId) {
+  const found = findProjectDir(projectId)
+  if (!found) throw { code: 'NOT_FOUND', message: `Project not found: ${projectId}` }
+
+  const config = fileService.readJson(path.join(found.fullPath, 'config.json'))
+  if (!config) throw { code: 'NOT_FOUND', message: 'config.json missing' }
+
+  const skillIds    = (config.skills    || []).map(s => s.ref_id)
+  const baselineIds = (config.baselines || []).map(b => b.ref_id)
+  const clonedName  = `${config.name}-副本`
+
+  const result = await createProject({
+    name: clonedName,
+    description: config.description || '',
+    skillIds,
+    baselineIds,
+    cliConfig:     config.cli_config,
+    contextConfig: config.context_config,
+  })
+
+  logService.info('project-service', 'Project cloned', { sourceId: projectId, newId: result.projectId, name: clonedName })
+  return result
+}
+
 module.exports = {
   createProject,
+  cloneProject,
   getProject,
   listProjects,
   updateProjectStatus,

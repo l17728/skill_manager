@@ -1053,6 +1053,36 @@ interface PaginationResult<T> {
 
 ---
 
+## `workspace:saveTemplate`
+
+**用途**：将 `cases_template.json` 模板文件保存到 workspace 根目录，供用户参考 JSON 导入格式。
+
+**入参**：无
+
+**返回**：`{ success: true; data: { path: string } }`
+
+---
+
+## `workspace:backup`
+
+**用途**：将整个 workspace/ 目录复制到用户指定目标目录，生成时间戳命名的备份文件夹。
+
+**入参**：`{ destDir: string }` — 目标父目录的绝对路径
+
+**返回**：`{ success: true; data: { path: string } }` — 实际创建的备份文件夹路径
+
+---
+
+## `project:clone`
+
+**用途**：克隆项目——以相同的 Skills 和 Baselines 创建一个新项目，名称为 `原名称-副本`，状态为 `pending`。
+
+**入参**：`{ projectId: string }`
+
+**返回**：`{ success: true; data: { projectId: string; projectPath: string; totalTasks: number } }`
+
+---
+
 ## `search:global`
 
 **入参**：
@@ -1402,7 +1432,7 @@ window.api = {
     autoTag: { trigger, triggerBatch, review },
     version: { list, diff, rollback }
   },
-  project: { create, list, get, export: exp, delete: del },
+  project: { create, list, get, export: exp, delete: del, clone },
   cli: { checkAvailable, getConfig, updateConfig, session: { list, close, export: exp } },
   context: { getStatus, compress, updateConfig },
   test: { start, pause, resume, stop, getProgress, getResults, retryCase, exportResults },
@@ -1410,7 +1440,8 @@ window.api = {
   recompose: { execute, save },
   iteration: { start, pause, stop, getProgress, getReport, getExplorationLog },
   trace: { getProjectEnv, compareEnvs },
-  workspace: { init },
+  workspace: { init, saveTemplate, backup },
+  project: { create, list, get, export: exp, delete: del, clone },
   search: { global },
   log: { query },
   leaderboard: { query, getTestSummaries, export: exp },

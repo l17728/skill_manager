@@ -61,6 +61,18 @@ module.exports = function registerWorkspaceHandlers() {
     return logService.queryLogs(args)
   }))
 
+  // P3-1: Backup workspace directory to user-specified destination
+  ipcMain.handle('workspace:backup', wrapHandler(async ({ destDir }) => {
+    if (!destDir) throw { code: 'INVALID_PARAMS', message: 'destDir is required' }
+    const path = require('path')
+    const srcDir = workspaceService.paths.workspace()
+    const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19)
+    const dest = path.join(destDir, `skillmanager_backup_${timestamp}`)
+    fileService.copyDir(srcDir, dest)
+    logService.info('workspace', 'workspace backup created', { dest })
+    return { path: dest }
+  }))
+
   // P1-3: Save a baseline cases.json template to the workspace root
   ipcMain.handle('workspace:saveTemplate', wrapHandler(async () => {
     const path = require('path')
