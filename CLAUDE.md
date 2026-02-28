@@ -85,6 +85,7 @@ main/
     index.js            # Registers all IPC modules
     skill.js / baseline.js / project.js / cli.js / context.js
     test.js / analysis.js / recompose.js / iteration.js / trace.js / workspace.js
+    manual.js             # manual:open (singleton BrowserWindow) + manual:getContent (fs+marked); does NOT use wrapHandler()
   services/             # All business logic; pure Node.js, no Electron deps
     workspace-service.js   # All path resolution (workspaceService.paths.*). NEVER hardcode workspace paths.
     file-service.js        # All fs ops: readJson, writeJson, ensureDir, listDirs, copyDir
@@ -106,9 +107,12 @@ main/
     trace-service.js       # Environment traceability (snapshot, compare)
 renderer/
   index.html            # 3-page layout (Skills / Baselines / Projects), CSP meta tag
+  manual.html           # Standalone manual viewer window (own CSP, loads manual.js)
   css/main.css          # Dark theme, CSS variables
+  css/manual.css        # Dark theme Markdown styles for manual viewer window
   js/
     app.js              # Navigation routing, CLI status polling, DOMContentLoaded init
+    manual.js           # Manual viewer: calls window.api.manual.getContent(), sets innerHTML
     pages/
       skill.js          # Skill management page IIFE → window.SkillPage
       baseline.js       # Baseline management page IIFE → window.BaselinePage
@@ -135,11 +139,12 @@ tests/
       app-launcher.js             # spawn Electron + --remote-debugging-port=9222, bind-based port-free check, wait for CDP
       workspace-factory.js        # createTestWorkspace({ skills, baselines, projects }), _seedSkill(), _seedBaseline(), _seedProject()
     pages/
-      app-page.js                 # navigation, notify assertions, CLI status
+      app-page.js                 # navigation, notify assertions, CLI status, helpBtn + clickHelpButton()
       skill-page.js               # full SkillPage POM (import, select, edit, tag, search, rollback, delete)
       baseline-page.js            # BaselinePage POM (importBaseline, selectBaseline, rollbackVersion, …)
       project-page.js             # ProjectPage POM (createProject, clickDelete, switchTab, …)
       rankings-page.js            # RankingsPage POM (navigate, search, filter, view toggle, assertions)
+      manual-page.js              # ManualPage POM for second BrowserWindow (toolbar, content, expectLoaded)
     specs/
       skill-management.spec.js    # TC-001~TC-020 active (TC-009,TC-017 skipped — needs live CLI); TC-019 empty-workspace guide card
       baseline-management.spec.js # TC-B-001~TC-B-014 active (TC-B-007 skipped — needs live CLI); TC-B-014 empty-workspace guide card
@@ -227,6 +232,7 @@ Each page (`skill.js`, `baseline.js`, `project.js`, `rankings.js`) is an IIFE th
 | 9 Iteration loop | `iteration-service.js` | `ipc/iteration.js` | `iteration-service.test.js` |
 | 10 Env traceability | `trace-service.js` | `ipc/trace.js` | `trace-service.test.js` |
 | 11 Rankings & Leaderboard | `leaderboard-service.js` | `ipc/leaderboard.js` | `leaderboard-service.test.js` |
+| 12 Manual Viewer | *(no service — fs read inline)* | `ipc/manual.js` | `manual-ipc.test.js` |
 
 ### Test Isolation Pattern
 
@@ -300,6 +306,14 @@ UI exposes three modes: **Standard** (beamWidth=1), **Explore** (beamWidth=2, no
 ### Scoring Rubric
 
 6-dimension 100-point scale evaluated via CLI: Functional Correctness (30), Robustness (20), Readability (15), Conciseness (15), Complexity Control (10), Format Compliance (10).
+
+### Manual Viewer (`main/ipc/manual.js`)
+
+- Reads `manual.md` via `fs.readFileSync` and converts with `marked.parse()` — no service layer.
+- **`marked` must stay at `^4.x`** (CJS-compatible). `marked@5+` is ESM-only and cannot be `require()`d in the Electron main process; upgrading causes `ERR_REQUIRE_ESM` before the `uncaughtException` handler is registered, triggering a native Electron error dialog.
+- Dev path: `path.join(__dirname, '../../manual.md')`. Packaged path: `path.join(process.resourcesPath, 'manual.md')` (copied by `extraResources` in `package.json`).
+- These handlers use `ipcMain.handle()` directly — **not** `wrapHandler()`. Response shape is `{ success, data }` | `{ success, error }` returned inline (no `code` field).
+- `createManualWindow()` is a singleton: if `manualWindow` exists it calls `.focus()` and returns.
 
 ### IPC Special Cases
 
