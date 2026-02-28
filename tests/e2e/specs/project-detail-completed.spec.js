@@ -222,9 +222,9 @@ test.describe('Project Detail — Completed Project', () => {
       projectPage.iterationBody.getByText(/Best: Round 2/)
     ).toBeVisible()
 
-    // Strategy badge (GREEDY for round 1)
+    // Strategy badge (GREEDY shows as '全面强化' after P2-2 localisation)
     await expect(
-      projectPage.iterationBody.getByText('GREEDY')
+      projectPage.iterationBody.getByText('全面强化')
     ).toBeVisible()
   })
 })

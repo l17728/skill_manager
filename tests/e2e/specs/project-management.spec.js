@@ -82,6 +82,22 @@ test.describe('Project Management', () => {
     workspace.cleanup()
   })
 
+  // ─── TC-P-000: Empty project list shows guide card ───────────────────────────
+
+  test('TC-P-000: empty workspace shows guide card with create button', async () => {
+    // Before any project is created the list shows the P0-2 guide card
+    await expect(
+      page.locator('#project-list .guide-card')
+    ).toBeVisible({ timeout: 5000 })
+    await expect(
+      page.locator('#project-list').getByText('还没有测试项目')
+    ).toBeVisible()
+    // Guide card contains a create action button
+    await expect(
+      page.locator('#empty-project-create-btn')
+    ).toBeVisible()
+  })
+
   // ─── TC-P-001: Create project ─────────────────────────────────────────────────
 
   test('TC-P-001: create project — appears in list', async () => {
@@ -144,16 +160,19 @@ test.describe('Project Management', () => {
 
   // ─── TC-P-008: Recompose tab empty state ──────────────────────────────────────
 
-  test('TC-P-008: recompose tab shows empty state before execution', async () => {
+  test('TC-P-008: recompose tab shows prereq banner before analysis is run', async () => {
+    await projectPage.selectProject(PROJECT_NAME)
     await projectPage.switchTab('recompose')
+    // P0-1: analysis must be run first — prereq banner should appear
     await expect(
-      projectPage.recomposeBody.getByText('Recompose Skill')
-    ).toBeVisible({ timeout: 5000 })
+      projectPage.recomposeBody.getByText('请先运行差异分析，才能执行重组')
+    ).toBeVisible({ timeout: 8000 })
   })
 
   // ─── TC-P-009: Iteration tab controls ────────────────────────────────────────
 
   test('TC-P-009: iteration tab shows mode selector and Start button', async () => {
+    await projectPage.selectProject(PROJECT_NAME)
     await projectPage.switchTab('iteration')
     await expect(projectPage.iterModeSelect).toBeVisible({ timeout: 5000 })
     await expect(projectPage.iterStartBtn).toBeVisible()
@@ -169,6 +188,7 @@ test.describe('Project Management', () => {
   // ─── TC-P-010: Search filters project list ────────────────────────────────────
 
   test('TC-P-010: search by name filters the project list', async () => {
+    await projectPage.selectProject(PROJECT_NAME)
     // Matching search — project should be visible
     await projectPage.searchProjects('E2E')
     await projectPage.expectProjectInList(PROJECT_NAME)
@@ -182,6 +202,43 @@ test.describe('Project Management', () => {
     // Clear search — restore list
     await projectPage.searchProjects('')
     await projectPage.expectProjectInList(PROJECT_NAME)
+  })
+
+  // ─── TC-P-011: Clone project ──────────────────────────────────────────────────
+
+  test('TC-P-011: clone project — creates copy with "-副本" suffix', async () => {
+    await projectPage.selectProject(PROJECT_NAME)
+    await projectPage.clickClone()
+
+    await appPage.expectSuccessNotification()
+    // Cloned project appears with "-副本" suffix
+    await projectPage.expectProjectInList(PROJECT_NAME + '-副本')
+    // Original project still in list
+    await projectPage.expectProjectInList(PROJECT_NAME)
+  })
+
+  // ─── TC-P-012: Analysis prereq banner for pending project ────────────────────
+
+  test('TC-P-012: analysis tab shows prereq banner when test not completed', async () => {
+    await projectPage.selectProject(PROJECT_NAME)
+    await projectPage.switchTab('analysis')
+    // P0-1: test run must complete first — prereq banner shows
+    await expect(
+      projectPage.analysisBody.getByText('请先完成测试，才能运行分析')
+    ).toBeVisible({ timeout: 8000 })
+  })
+
+  // ─── TC-P-013: Progress stepper shows 4 workflow steps ───────────────────────
+
+  test('TC-P-013: progress stepper shows 4 workflow steps', async () => {
+    await projectPage.selectProject(PROJECT_NAME)
+    const stepper = page.locator('#project-stepper')
+    await expect(stepper).toBeVisible({ timeout: 5000 })
+    // All 4 steps visible
+    await expect(stepper.getByText('① Test')).toBeVisible()
+    await expect(stepper.getByText('② Analysis')).toBeVisible()
+    await expect(stepper.getByText('③ Recompose')).toBeVisible()
+    await expect(stepper.getByText('④ Iteration')).toBeVisible()
   })
 
   // ─── TC-P-004: Delete project removes from list ───────────────────────────────
@@ -198,7 +255,10 @@ test.describe('Project Management', () => {
     await projectPage.clickDelete()
 
     await expect(
-      projectPage.projectList.locator('.skill-item', { hasText: PROJECT_NAME })
+      // Use exact match so the clone ("E2E Test Project-副本") doesn't count
+      projectPage.projectList
+        .locator('.skill-item')
+        .filter({ has: page.getByText(PROJECT_NAME, { exact: true }) })
     ).toHaveCount(0, { timeout: 8000 })
   })
 

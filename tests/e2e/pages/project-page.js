@@ -18,6 +18,7 @@ class ProjectPage {
     this.detailEmpty = page.locator('#project-detail-empty')
     this.detailPanel = page.locator('#project-detail')
     this.detailName  = page.locator('#project-detail-name')
+    this.cloneBtn    = page.locator('#project-clone-btn')
     this.exportBtn   = page.locator('#project-export-btn')
     this.deleteBtn   = page.locator('#project-delete-btn')
 
@@ -81,13 +82,19 @@ class ProjectPage {
     await this.createConfirm.click()
   }
 
+  async clickClone() {
+    await this.cloneBtn.click()
+  }
+
   async clickDelete() {
     await this.deleteBtn.click()
   }
 
   async selectProject(name) {
+    // Use exact text match on .skill-item-name to avoid matching clone/prefix variants
     await this.projectList
-      .locator('.skill-item', { hasText: name })
+      .locator('.skill-item')
+      .filter({ has: this.page.getByText(name, { exact: true }) })
       .first()
       .click()
     await this.expectDetailShowing(name)
@@ -103,8 +110,12 @@ class ProjectPage {
   // ─── Assertions ────────────────────────────────────────────────────────────
 
   async expectProjectInList(name, { timeout = 8000 } = {}) {
+    // Use exact text match to avoid partial matches (e.g. clone has same prefix)
     await expect(
-      this.projectList.locator('.skill-item', { hasText: name })
+      this.projectList
+        .locator('.skill-item')
+        .filter({ has: this.page.getByText(name, { exact: true }) })
+        .first()
     ).toBeVisible({ timeout })
   }
 
