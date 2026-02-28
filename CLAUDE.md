@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **319 unit tests + 63 e2e tests passing**.
+**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **333 unit tests + 63 e2e tests passing**.
 
 ### Specification Documents (read before modifying any module)
 
@@ -125,7 +125,7 @@ tests/
     skill-service.test.js  baseline-service.test.js  project-service.test.js
     cli-service.test.js    context-service.test.js   test-service.test.js
     analysis-service.test.js  recompose-service.test.js  iteration-service.test.js
-    trace-service.test.js  purpose-suggestion.test.js
+    trace-service.test.js  purpose-suggestion.test.js  cli-lite-service.test.js
   helpers/
     fs-helper.js        # createTmpDir(), overrideWorkspace() — used by every unit test suite
   e2e/                  # Playwright end-to-end tests (real Electron via CDP)
