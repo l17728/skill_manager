@@ -200,3 +200,22 @@ describe('CSP: Electron sandbox setting', () => {
     expect(mainSrc).not.toContain('sandbox: false')
   })
 })
+
+describe('CSP: manual.js renderer', () => {
+  let src
+  beforeAll(() => {
+    src = fs.readFileSync(path.join(__dirname, '../../renderer/js/manual.js'), 'utf-8')
+  })
+
+  test('manual.js has no inline onclick= attribute handlers', () => {
+    expect(src.match(/onclick\s*=/g)).toBeNull()
+  })
+
+  test('manual.js does not interpolate IPC data into innerHTML with escHtml omitted', () => {
+    // content.innerHTML = res.data is trusted Markdown-rendered HTML from our own file.
+    // Verify there is no raw user-supplied string concatenated into innerHTML.
+    // The only innerHTML assignment should be res.data (marked.parse output).
+    const inlineStrings = src.match(/innerHTML\s*=\s*`[^`]*\$\{(?!.*window\.escHtml)[^}]+\}/g)
+    expect(inlineStrings).toBeNull()
+  })
+})

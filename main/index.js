@@ -3,6 +3,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const { registerAllHandlers } = require('./ipc/index')
+const { registerManualHandlers } = require('./ipc/manual')
 const workspaceService = require('./services/workspace-service')
 const logService = require('./services/log-service')
 
@@ -19,6 +20,7 @@ if (!gotSingleInstanceLock) {
 }
 
 let mainWindow
+let manualWindow = null
 
 // ─── Process-level error handlers (must be registered as early as possible) ──
 
@@ -60,6 +62,25 @@ app.on('second-instance', () => {
     mainWindow.moveTop()
   }
 })
+
+// ─── Manual Window ────────────────────────────────────────────────────────────
+
+function createManualWindow() {
+  if (manualWindow) { manualWindow.focus(); return }
+  manualWindow = new BrowserWindow({
+    width: 960, height: 750, minWidth: 700, minHeight: 500,
+    title: 'SkillManager — 用户手册',
+    backgroundColor: '#0f0f1a', show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true, nodeIntegration: false, sandbox: true,
+    },
+  })
+  manualWindow.loadFile(path.join(__dirname, '../renderer/manual.html'))
+  manualWindow.once('ready-to-show', () => manualWindow.show())
+  manualWindow.on('closed', () => { manualWindow = null })
+  manualWindow.setMenu(null)
+}
 
 // ─── Window ───────────────────────────────────────────────────────────────────
 
@@ -170,6 +191,7 @@ app.whenReady().then(async () => {
 
   createWindow()
   registerAllHandlers(mainWindow)
+  registerManualHandlers(createManualWindow)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

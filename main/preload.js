@@ -37,6 +37,8 @@ const INVOKE_CHANNELS = [
   'leaderboard:query', 'leaderboard:getTestSummaries', 'leaderboard:export',
 
   'workspace:init', 'workspace:saveTemplate', 'workspace:backup', 'search:global', 'log:query',
+
+  'manual:open', 'manual:getContent',
 ]
 
 // All event channels allowed for on()
@@ -180,6 +182,12 @@ contextBridge.exposeInMainWorld('api', {
   trace: {
     getProjectEnv: (args) => ipcRenderer.invoke('trace:getProjectEnv', args),
     compareEnvs:   (args) => ipcRenderer.invoke('trace:compareEnvs', args),
+  },
+
+  // Manual viewer
+  manual: {
+    open:       () => ipcRenderer.invoke('manual:open'),
+    getContent: () => ipcRenderer.invoke('manual:getContent'),
   },
 
   // Leaderboard module (Module 11)

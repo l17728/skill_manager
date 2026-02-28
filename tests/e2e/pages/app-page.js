@@ -15,6 +15,9 @@ class AppPage {
     this.navBaseline = page.locator('.nav-tab[data-page="baseline"]')
     this.navProject  = page.locator('.nav-tab[data-page="project"]')
 
+    // Help / manual button
+    this.helpBtn = page.locator('#help-btn')
+
     // CLI status
     this.cliDot          = page.locator('#cli-dot')
     this.cliVersionLabel = page.locator('#cli-version-label')
@@ -54,6 +57,16 @@ class AppPage {
     await expect(
       this.notifyContainer.locator('.notify', { hasText: text })
     ).toBeVisible({ timeout })
+  }
+
+  // ─── Help / Manual ─────────────────────────────────────────────────────────
+
+  /**
+   * Click the "? 手册" button in the topbar.
+   * Returns a Promise so the caller can race it with context.waitForEvent('page').
+   */
+  async clickHelpButton() {
+    await this.helpBtn.click()
   }
 
   // ─── CLI Status ────────────────────────────────────────────────────────────

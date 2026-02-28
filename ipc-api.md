@@ -1412,6 +1412,37 @@ project_id, tested_at, staleness`
 
 ---
 
+# 十四.六、用户手册通道
+
+## `manual:open`
+
+**入参**：无
+
+**返回**：`undefined`（void）
+
+打开用户手册独立窗口。若手册窗口已经存在，则将其聚焦而不重新创建。手册窗口与主窗口并存，不互相阻塞。
+
+---
+
+## `manual:getContent`
+
+**入参**：无
+
+**返回**
+
+```typescript
+{ success: true;  data: string }   // marked 渲染后的 HTML 字符串
+{ success: false; error: string }  // 文件读取失败时的错误信息
+```
+
+读取项目根目录（开发模式）或 `resources/manual.md`（打包模式）中的 Markdown 手册，调用 `marked.parse()` 转换为 HTML 后返回。
+
+> **路径策略**：
+> - 开发模式：`path.join(__dirname, '../../manual.md')`
+> - 打包模式：`path.join(process.resourcesPath, 'manual.md')`（由 `extraResources` 复制）
+
+---
+
 # 十五、Preload API 汇总
 
 `preload.js` 通过 `contextBridge.exposeInMainWorld('api', {...})` 暴露以下结构：
@@ -1445,6 +1476,7 @@ window.api = {
   search: { global },
   log: { query },
   leaderboard: { query, getTestSummaries, export: exp },
+  manual: { open, getContent },
 
   // on 类（事件监听，返回 unsubscribe 函数）
   on: (channel: string, callback: (data: any) => void) => () => void

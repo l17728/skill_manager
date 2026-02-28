@@ -59,6 +59,11 @@ async function init() {
   ProjectPage.init()
   RankingsPage.init()
 
+  // Help / manual button
+  document.getElementById('help-btn').addEventListener('click', () => {
+    window.api.manual.open()
+  })
+
   // Listen for CLI status changes
   window.api.on('cli:status:change', (data) => {
     const dot = document.getElementById('cli-dot')

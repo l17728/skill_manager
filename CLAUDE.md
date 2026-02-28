@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **333 unit tests + 63 e2e tests passing**.
+**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **341 unit tests + 68 e2e tests passing**.
 
 ### Specification Documents (read before modifying any module)
 
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev      # Launch Electron app (development mode, --dev flag)
 npm start        # Launch Electron app (production mode)
-npm test         # Run all 319 Jest unit tests
+npm test         # Run all 341 Jest unit tests
 npm run test:e2e # Run Playwright e2e tests (launches real Electron; port 9222 must be free)
 npm run test:watch    # Jest in watch mode
 npm run test:coverage # Jest with coverage report
@@ -126,6 +126,7 @@ tests/
     cli-service.test.js    context-service.test.js   test-service.test.js
     analysis-service.test.js  recompose-service.test.js  iteration-service.test.js
     trace-service.test.js  purpose-suggestion.test.js  cli-lite-service.test.js
+    manual-ipc.test.js
   helpers/
     fs-helper.js        # createTmpDir(), overrideWorkspace() — used by every unit test suite
   e2e/                  # Playwright end-to-end tests (real Electron via CDP)
@@ -145,6 +146,7 @@ tests/
       project-management.spec.js       # TC-P-000~TC-P-016 active (TC-P-005 skipped — needs live CLI)
       project-detail-completed.spec.js # TC-PC-001~TC-PC-003: pre-seeded completed project, no CLI
       rankings.spec.js                 # TC-R-001~TC-R-013: Rankings & Leaderboard (no CLI needed); TC-R-013 badge-click navigation
+      manual-viewer.spec.js            # TC-M-001~TC-M-005: Manual Viewer window (no CLI needed)
     action-reference/
       action-reference.json       # function-call-style UI API doc for Claude agent test generation
     nl-test-scripts/
