@@ -1,6 +1,6 @@
 {
   "name": "skillmanager",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "description": "Prompt & Skill Comparison, Verification & Optimization Platform",
   "main": "main/index.js",
   "scripts": {
