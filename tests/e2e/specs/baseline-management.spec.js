@@ -153,7 +153,10 @@ test.describe('Baseline Management', () => {
     await expect(page.locator('#baseline-detail-body')).toContainText('Test Cases (3)', { timeout: 8000 })
 
     // Handle the confirm() dialog for case deletion
-    page.once('dialog', (dialog) => dialog.accept())
+    page.once('dialog', (dialog) => {
+      console.log(`[TC-B-006] Accepting case delete confirm: "${dialog.message()}"`)
+      dialog.accept()
+    })
 
     // Click the first "Del" button in the cases table
     await page.locator('#baseline-detail-body [data-case-action="delete"]').first().click()
@@ -168,5 +171,106 @@ test.describe('Baseline Management', () => {
     await baselinePage.selectBaseline('Seed Baseline Alpha')
     await baselinePage.autotagBtn.click()
     await appPage.expectNotificationContaining('Auto-tagging')
+  })
+
+  // ─── TC-B-008: Purpose filter ─────────────────────────────────────────────
+
+  test('TC-B-008: purpose filter shows only matching baselines', async () => {
+    // Workspace has: Alpha (coding), Beta (writing), Imported (testing)
+    await baselinePage.filterByPurpose('coding')
+
+    await baselinePage.expectBaselineInList('Seed Baseline Alpha')
+    await baselinePage.expectBaselineNotInList('Seed Baseline Beta')
+    await baselinePage.expectBaselineNotInList('Imported Test Baseline')
+
+    // Clear filter
+    await baselinePage.filterByPurpose('')
+    await baselinePage.expectBaselineInList('Seed Baseline Beta')
+  })
+
+  // ─── TC-B-009: Provider filter ────────────────────────────────────────────
+
+  test('TC-B-009: provider filter shows only matching baselines', async () => {
+    await baselinePage.filterByProvider('internal')
+
+    await baselinePage.expectBaselineInList('Seed Baseline Alpha')      // provider=internal
+    await baselinePage.expectBaselineNotInList('Seed Baseline Beta')    // provider=external
+    await baselinePage.expectBaselineNotInList('Imported Test Baseline') // provider=test-corp
+
+    // Clear filter
+    await baselinePage.filterByProvider('')
+    await baselinePage.expectBaselineInList('Seed Baseline Beta')
+  })
+
+  // ─── TC-B-010: Tag filter chip add / remove ───────────────────────────────
+
+  test('TC-B-010: tag filter chip appears on Enter and is removable with ×', async () => {
+    await baselinePage.addTagChip('nonexistent-baseline-tag')
+
+    // Chip visible in filter bar
+    await expect(
+      baselinePage.activeTagsEl.locator('.filter-chip-remove[data-tag="nonexistent-baseline-tag"]')
+    ).toBeVisible({ timeout: 3000 })
+
+    // List becomes empty (no baselines have this tag)
+    await expect(
+      baselinePage.baselineList.locator('.empty-state')
+    ).toBeVisible({ timeout: 5000 })
+
+    // Remove chip → list restores
+    await baselinePage.removeTagChip('nonexistent-baseline-tag')
+    await baselinePage.expectBaselineInList('Seed Baseline Alpha')
+  })
+
+  // ─── TC-B-011: Clear all filters ─────────────────────────────────────────
+
+  test('TC-B-011: "clear all" chip resets all baseline filters', async () => {
+    // Activate purpose filter
+    await baselinePage.filterByPurpose('coding')
+    await expect(baselinePage.baselineList.locator('.skill-item')).toHaveCount(1, { timeout: 5000 })
+
+    // "clear all" should appear
+    await expect(page.locator('#baseline-clear-filters')).toBeVisible({ timeout: 3000 })
+
+    // Click it
+    await baselinePage.clearAllFilters()
+    await expect(baselinePage.baselineList.locator('.skill-item')).toHaveCount(3, { timeout: 5000 })
+  })
+
+  // ─── TC-B-012: Empty state with filter ───────────────────────────────────
+
+  test('TC-B-012: no-match provider filter shows empty-state (not guide card)', async () => {
+    await baselinePage.filterByProvider('ZZZNOMATCH__XYZ')
+
+    await expect(
+      baselinePage.baselineList.locator('.empty-state')
+    ).toBeVisible({ timeout: 5000 })
+
+    // Guide card (empty workspace) should NOT be present
+    await expect(
+      baselinePage.baselineList.locator('.guide-card')
+    ).toHaveCount(0, { timeout: 3000 })
+
+    // Restore
+    await baselinePage.filterByProvider('')
+    await baselinePage.expectBaselineInList('Seed Baseline Alpha')
+  })
+
+  // ─── TC-B-013: Template download button triggers success notification ─────
+
+  test('TC-B-013: template download button saves cases.json template and notifies', async () => {
+    // Open import modal and switch to the File tab (data-tab="bfile")
+    await baselinePage.importBtn.click()
+    await expect(baselinePage.importModal).toBeVisible({ timeout: 5000 })
+    await baselinePage.importModal.locator('.import-tab[data-tab="bfile"]').click()
+
+    // Click the template download button
+    await page.locator('#baseline-download-template-btn').click()
+
+    // A success notification should appear (workspace.saveTemplate writes cases_template.json)
+    await appPage.expectSuccessNotification()
+
+    // Close modal — use .btn-secondary to avoid ambiguity with ✕ icon button
+    await baselinePage.importModal.locator('.btn-secondary.modal-close').click()
   })
 })

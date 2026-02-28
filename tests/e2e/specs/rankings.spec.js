@@ -250,6 +250,46 @@ test.describe('Rankings & Leaderboard', () => {
     await rankingsPage.search('ZZZ_NONEXISTENT_SKILL_XYZ')
     await rankingsPage.expectEmptyState()
   })
+
+  // ─── TC-R-011: Period filter select ─────────────────────────────────────────
+
+  test('TC-R-011: period filter select is interactive and updates view', async () => {
+    // Already on rankings page after TC-R-009 — clear any search residue
+    await rankingsPage.clearFilters()
+    await rankingsPage.switchToRank()
+    await rankingsPage.expectGroupVisible(BASELINE_NAME)
+
+    // Select 30-day period — all seeded records are "now" so all should remain
+    await rankingsPage.selectPeriod(30)
+    await rankingsPage.expectGroupVisible(BASELINE_NAME)
+
+    // Select 90-day period — same result
+    await rankingsPage.selectPeriod(90)
+    await rankingsPage.expectGroupVisible(BASELINE_NAME)
+
+    // Clear period filter — full grouped view
+    await rankingsPage.clearFilters()
+    await rankingsPage.expectGroupVisible(BASELINE_NAME)
+    await rankingsPage.expectGroupVisible(BASELINE2_NAME)
+  })
+
+  // ─── TC-R-012: Export CSV button triggers success notification ───────────────
+
+  test('TC-R-012: export CSV button writes file and shows success notification', async () => {
+    // Still on rankings page — ensure clean filter state
+    await rankingsPage.clearFilters()
+
+    // Click export — no baseline filter = exports all records
+    await rankingsPage.exportBtn.click()
+
+    // Renderer shows: window.notify(`模板已保存到：${path}`, 'success')
+    await expect(
+      page.locator('#notify-container .notify.success').first()
+    ).toBeVisible({ timeout: 8000 })
+    await expect(
+      page.locator('#notify-container .notify.success').first()
+    ).toContainText('已导出', { timeout: 3000 })
+  })
 })
 
 // ─── TC-R-010: Skill test badge (separate lifecycle) ─────────────────────────

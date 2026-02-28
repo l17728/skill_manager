@@ -270,4 +270,55 @@ test.describe('Project Management', () => {
     await projectPage.testStartBtn.click()
     await appPage.expectNotificationContaining('Test started')
   })
+
+  // ─── TC-P-014: Iteration tab basic fields have correct defaults ───────────
+
+  test('TC-P-014: iteration tab Max Rounds and Stop Score fields show correct defaults', async () => {
+    await projectPage.selectProject(PROJECT_NAME + '-副本')
+    await projectPage.switchTab('iteration')
+
+    // Max Rounds default = 3
+    await expect(page.locator('#iter-max-rounds')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('#iter-max-rounds')).toHaveValue('3')
+
+    // Stop Score default = 0
+    await expect(page.locator('#iter-stop-threshold')).toBeVisible()
+    await expect(page.locator('#iter-stop-threshold')).toHaveValue('0')
+  })
+
+  // ─── TC-P-015: Explore mode shows advanced params with correct defaults ───
+
+  test('TC-P-015: explore mode shows beam-width and plateau fields with correct defaults', async () => {
+    await projectPage.selectProject(PROJECT_NAME + '-副本')
+    await projectPage.switchTab('iteration')
+
+    // Switch to explore mode
+    await projectPage.iterModeSelect.selectOption('explore')
+    await expect(page.locator('#iter-advanced-row')).toBeVisible({ timeout: 3000 })
+
+    // Beam Width default = 2
+    await expect(page.locator('#iter-beam-width')).toHaveValue('2')
+
+    // Plateau Δ default = 1 (input[value="1.0"] matches '1')
+    const plateauVal = await page.locator('#iter-plateau-threshold').inputValue()
+    expect(parseFloat(plateauVal)).toBe(1.0)
+
+    // Escape After default = 2
+    await expect(page.locator('#iter-plateau-rounds')).toHaveValue('2')
+
+    // Restore
+    await projectPage.iterModeSelect.selectOption('standard')
+  })
+
+  // ─── TC-P-016: Project create modal cancel closes the modal ──────────────
+
+  test('TC-P-016: project create modal cancel button closes modal', async () => {
+    await page.locator('#project-create-btn').click()
+    await expect(page.locator('#project-create-modal')).toBeVisible({ timeout: 5000 })
+
+    // Click the Cancel button (btn-secondary) — avoids ambiguity with the ✕ icon button
+    await page.locator('#project-create-modal .btn-secondary.modal-close').click()
+
+    await expect(page.locator('#project-create-modal')).toBeHidden({ timeout: 3000 })
+  })
 })

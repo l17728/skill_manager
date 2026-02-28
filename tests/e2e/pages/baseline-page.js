@@ -15,6 +15,12 @@ class BaselinePage {
     this.baselineList = page.locator('#baseline-list')
     this.pagination   = page.locator('#baseline-pagination')
 
+    // ─── Filter bar ──────────────────────────────────────────────────────────
+    this.purposeInput  = page.locator('#baseline-purpose-input')
+    this.providerInput = page.locator('#baseline-provider-input')
+    this.tagInput      = page.locator('#baseline-tag-input')
+    this.activeTagsEl  = page.locator('#baseline-active-tags')
+
     this.detailEmpty  = page.locator('#baseline-detail-empty')
     this.detailPanel  = page.locator('#baseline-detail')
     this.detailName   = page.locator('#baseline-detail-name')
@@ -61,6 +67,39 @@ class BaselinePage {
 
   async search(keyword) {
     await this.searchInput.fill(keyword)
+    await this.page.waitForTimeout(450)
+  }
+
+  /** Filter list by purpose (debounced 350ms). */
+  async filterByPurpose(purpose) {
+    await this.purposeInput.fill(purpose)
+    await this.page.waitForTimeout(450)
+  }
+
+  /** Filter list by provider (debounced 350ms). */
+  async filterByProvider(provider) {
+    await this.providerInput.fill(provider)
+    await this.page.waitForTimeout(450)
+  }
+
+  /** Add a tag chip to the filter bar by typing and pressing Enter. */
+  async addTagChip(tag) {
+    await this.tagInput.fill(tag)
+    await this.tagInput.press('Enter')
+    await this.page.waitForTimeout(200)
+  }
+
+  /** Remove a tag chip from the filter bar by clicking its × button. */
+  async removeTagChip(tag) {
+    await this.activeTagsEl
+      .locator(`.filter-chip-remove[data-tag="${tag}"]`)
+      .click()
+    await this.page.waitForTimeout(200)
+  }
+
+  /** Click the "clear all" chip that appears when any filter is active. */
+  async clearAllFilters() {
+    await this.page.locator('#baseline-clear-filters').click()
     await this.page.waitForTimeout(450)
   }
 

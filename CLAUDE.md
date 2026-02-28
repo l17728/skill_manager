@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **319 unit tests + 41 e2e tests passing**.
+**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **319 unit tests + 59 e2e tests passing**.
 
 ### Specification Documents (read before modifying any module)
 
@@ -140,11 +140,11 @@ tests/
       project-page.js             # ProjectPage POM (createProject, clickDelete, switchTab, …)
       rankings-page.js            # RankingsPage POM (navigate, search, filter, view toggle, assertions)
     specs/
-      skill-management.spec.js    # TC-001~TC-008,TC-010 active, TC-009 skipped (needs live CLI)
-      baseline-management.spec.js # TC-B-001~TC-B-006 active, TC-B-007 skipped (needs live CLI)
-      project-management.spec.js       # TC-P-000~TC-P-004,TC-P-006~TC-P-013 active, TC-P-005 skipped (needs live CLI)
+      skill-management.spec.js    # TC-001~TC-018 active (TC-009,TC-017 skipped — needs live CLI)
+      baseline-management.spec.js # TC-B-001~TC-B-013 active (TC-B-007 skipped — needs live CLI)
+      project-management.spec.js       # TC-P-000~TC-P-016 active (TC-P-005 skipped — needs live CLI)
       project-detail-completed.spec.js # TC-PC-001~TC-PC-003: pre-seeded completed project, no CLI
-      rankings.spec.js                 # TC-R-001~TC-R-010: Rankings & Leaderboard (no CLI needed)
+      rankings.spec.js                 # TC-R-001~TC-R-012: Rankings & Leaderboard (no CLI needed)
     action-reference/
       action-reference.json       # function-call-style UI API doc for Claude agent test generation
     nl-test-scripts/

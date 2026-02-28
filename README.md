@@ -94,7 +94,7 @@ npm run build    # 输出到 dist/
 ## 开发
 
 ```bash
-npm test                                        # 运行全部 269 个单元测试
+npm test                                        # 运行全部 319 个单元测试
 npx jest tests/unit/iteration-service.test.js  # 运行单个测试文件
 npx jest --testNamePattern="UC9-1"             # 按名称过滤
 npm run test:e2e                               # Playwright E2E 测试（需端口 9222 空闲）
@@ -131,8 +131,8 @@ renderer/
   css/          # 深色主题
   js/pages/     # skill.js / baseline.js / project.js
 tests/
-  unit/         # Jest 单元测试（269 个）
-  e2e/          # Playwright E2E 测试（27 个）
+  unit/         # Jest 单元测试（319 个）
+  e2e/          # Playwright E2E 测试（63 个，其中 4 个需真实 CLI）
 docs/
   spec.md       # 51 个 TDD 验收用例
   schema.md     # 所有 JSON 文件 schema

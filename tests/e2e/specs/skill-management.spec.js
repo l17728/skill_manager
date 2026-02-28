@@ -210,4 +210,176 @@ test.describe('Skill Management', () => {
     await skillPage.expectSkillInList('My Test Agent')
     await skillPage.expectTypeBadge('My Test Agent', 'agent')
   })
+
+  // ─── TC-018: Edit modal type / description / author ──────────────────────
+
+  test('TC-018: edit modal exposes type, description, author — changes reflected in detail', async () => {
+    await skillPage.selectSkill('Seed Skill Alpha')
+    await skillPage.editBtn.click()
+    await expect(skillPage.editModal).toHaveClass(/open/, { timeout: 3000 })
+
+    // All three extra fields are visible in the edit modal
+    await expect(page.locator('#skill-edit-description')).toBeVisible()
+    await expect(page.locator('#skill-edit-author')).toBeVisible()
+    await expect(page.locator('#skill-edit-type')).toBeVisible()
+
+    // Fill them in
+    await page.locator('#skill-edit-description').fill('E2E edit modal description')
+    await page.locator('#skill-edit-author').fill('E2E Edit Author')
+    await page.locator('#skill-edit-type').selectOption('agent')
+
+    await skillPage.editConfirm.click()
+    await appPage.expectSuccessNotification()
+
+    // Author visible in the detail meta grid
+    await expect(skillPage.detailBody.getByText('E2E Edit Author')).toBeVisible({ timeout: 5000 })
+
+    // Description visible below the meta grid
+    await expect(skillPage.detailBody.getByText('E2E edit modal description')).toBeVisible()
+
+    // Type badge in the list should now show 'A' (agent)
+    await skillPage.expectTypeBadge('Seed Skill Alpha', 'agent')
+  })
+
+  // ─── TC-011: Purpose filter ───────────────────────────────────────────────
+
+  test('TC-011: purpose filter shows only matching skills', async () => {
+    // Workspace has: Alpha (coding), Beta (writing), Agent (automation)
+    await skillPage.filterByPurpose('coding')
+
+    await skillPage.expectSkillInList('Seed Skill Alpha')
+    await skillPage.expectSkillNotInList('Seed Skill Beta')
+    await skillPage.expectSkillNotInList('My Test Agent')
+
+    // Clear filter — restore full list
+    await skillPage.filterByPurpose('')
+    await skillPage.expectSkillInList('Seed Skill Beta')
+  })
+
+  // ─── TC-012: Provider filter ──────────────────────────────────────────────
+
+  test('TC-012: provider filter shows only matching skills', async () => {
+    await skillPage.filterByProvider('anthropic')
+
+    await skillPage.expectSkillInList('Seed Skill Alpha')      // provider=anthropic
+    await skillPage.expectSkillNotInList('Seed Skill Beta')    // provider=openai
+    await skillPage.expectSkillNotInList('My Test Agent')      // provider=test-corp
+
+    // Clear filter
+    await skillPage.filterByProvider('')
+    await skillPage.expectSkillInList('Seed Skill Beta')
+  })
+
+  // ─── TC-013: Tag filter chip add / remove ─────────────────────────────────
+
+  test('TC-013: tag filter chip appears on Enter and is removable with ×', async () => {
+    // Add a tag chip (no skills have this tag so list will be empty)
+    await skillPage.addTagChip('nonexistent-e2e-tag')
+
+    // Chip must appear in the filter bar
+    await expect(
+      skillPage.activeTagsEl.locator('.filter-chip-remove[data-tag="nonexistent-e2e-tag"]')
+    ).toBeVisible({ timeout: 3000 })
+
+    // List becomes empty (no skills have this tag)
+    await expect(
+      skillPage.skillList.locator('.empty-state')
+    ).toBeVisible({ timeout: 5000 })
+
+    // Remove chip → list restores
+    await skillPage.removeTagChip('nonexistent-e2e-tag')
+    await skillPage.expectSkillInList('Seed Skill Alpha')
+  })
+
+  // ─── TC-014: Clear all filters ────────────────────────────────────────────
+
+  test('TC-014: "clear all" chip resets purpose and tag filters', async () => {
+    // Activate a purpose filter (this creates "clear all" chip)
+    await skillPage.filterByPurpose('coding')
+    await expect(skillPage.skillList.locator('.skill-item')).toHaveCount(1, { timeout: 5000 })
+
+    // "clear all" chip should appear
+    await expect(page.locator('#skill-clear-filters')).toBeVisible({ timeout: 3000 })
+
+    // Click it — full list restored
+    await skillPage.clearAllFilters()
+    await expect(skillPage.skillList.locator('.skill-item')).toHaveCount(3, { timeout: 5000 })
+  })
+
+  // ─── TC-015: Empty state with active filter ───────────────────────────────
+
+  test('TC-015: no-match filter shows empty-state (not guide card)', async () => {
+    await skillPage.filterByPurpose('ZZZNOMATCH__XYZ')
+
+    // The non-guide-card empty state appears (filtered empty)
+    await expect(
+      skillPage.skillList.locator('.empty-state')
+    ).toBeVisible({ timeout: 5000 })
+
+    // Guide card (for truly empty workspace) should NOT be present
+    await expect(
+      skillPage.skillList.locator('.guide-card')
+    ).toHaveCount(0, { timeout: 3000 })
+
+    // Restore
+    await skillPage.filterByPurpose('')
+    await skillPage.expectSkillInList('Seed Skill Alpha')
+  })
+
+  // ─── TC-017: Purpose merge suggestion (requires Claude CLI — skipped) ───────
+  // purposeSuggest calls cliLiteService.suggestPurposeMerge() which invokes the
+  // Claude CLI for semantic matching. Without a live CLI it always returns
+  // shouldMerge:false and the banner never appears.
+
+  test.skip('TC-017: purpose merge suggestion — requires real Claude CLI + API key', async () => {
+    // The workspace already has skills with purpose='coding' (Seed Skill Alpha).
+    // Typing 'Coding' (capital C) triggers the suggestion banner because
+    // it matches case-insensitively but differs in case.
+    await skillPage.importBtn.click()
+    await expect(skillPage.importModal).toHaveClass(/open/, { timeout: 3000 })
+
+    await skillPage.importName.fill('Merge Suggestion Test')
+    await skillPage.importPurpose.fill('Coding')
+    await skillPage.importPurpose.blur()   // triggers _checkPurposeMerge() (async API call)
+
+    // Suggestion banner should appear
+    await expect(page.locator('#skill-purpose-suggestion')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('#skill-purpose-merge-btn')).toBeVisible()
+    await expect(page.locator('#skill-purpose-keep-btn')).toBeVisible()
+
+    // Click "Keep New Purpose" — dismisses banner, input stays as typed
+    await page.locator('#skill-purpose-keep-btn').click()
+    await expect(page.locator('#skill-purpose-suggestion')).toBeHidden({ timeout: 2000 })
+    await expect(skillPage.importPurpose).toHaveValue('Coding')
+
+    // Cancel modal — do not complete the import
+    await skillPage.importModal.locator('.btn-secondary.modal-close').click()
+    await expect(skillPage.importModal).not.toHaveClass(/open/, { timeout: 2000 })
+  })
+
+  // ─── TC-016: Import with description + author ─────────────────────────────
+
+  test('TC-016: import with description and author — both visible in detail', async () => {
+    await skillPage.importSkill({
+      name:        'Skill With Metadata',
+      purpose:     'testing',
+      provider:    'meta-corp',
+      content:     'Skill content for metadata test.',
+      description: 'A full description for the e2e test.',
+      author:      'E2E Author',
+    })
+
+    await appPage.expectSuccessNotification()
+    await skillPage.selectSkill('Skill With Metadata')
+
+    // Author shown in meta grid
+    await expect(
+      skillPage.detailBody.getByText('E2E Author')
+    ).toBeVisible({ timeout: 5000 })
+
+    // Description shown below meta grid
+    await expect(
+      skillPage.detailBody.getByText('A full description for the e2e test.')
+    ).toBeVisible({ timeout: 5000 })
+  })
 })

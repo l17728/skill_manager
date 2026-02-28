@@ -37,13 +37,15 @@ class SkillPage {
     this.auxBody      = page.locator('#skill-aux-body')
 
     // ─── Import modal ────────────────────────────────────────────────────────
-    this.importModal    = page.locator('#skill-import-modal')
-    this.importName     = page.locator('#skill-import-name')
-    this.importPurpose  = page.locator('#skill-import-purpose')
-    this.importProvider = page.locator('#skill-import-provider')
-    this.importType     = page.locator('#skill-import-type')
-    this.importContent  = page.locator('#skill-import-content')
-    this.importConfirm  = page.locator('#skill-import-confirm')
+    this.importModal       = page.locator('#skill-import-modal')
+    this.importName        = page.locator('#skill-import-name')
+    this.importPurpose     = page.locator('#skill-import-purpose')
+    this.importProvider    = page.locator('#skill-import-provider')
+    this.importType        = page.locator('#skill-import-type')
+    this.importDescription = page.locator('#skill-import-description')
+    this.importAuthor      = page.locator('#skill-import-author')
+    this.importContent     = page.locator('#skill-import-content')
+    this.importConfirm     = page.locator('#skill-import-confirm')
 
     // ─── Edit modal ──────────────────────────────────────────────────────────
     this.editModal   = page.locator('#skill-edit-modal')
@@ -75,6 +77,8 @@ class SkillPage {
     if (opts.type) {
       await this.importType.selectOption(opts.type)
     }
+    if (opts.description !== undefined) await this.importDescription.fill(opts.description)
+    if (opts.author      !== undefined) await this.importAuthor.fill(opts.author)
 
     // Ensure "Text" import tab is active (first tab / default)
     const textTab = this.page.locator('#skill-import-modal .import-tab[data-tab="text"]')
@@ -131,12 +135,45 @@ class SkillPage {
   }
 
   /**
-   * Type into the search box (debounced, waits 400ms after typing).
+   * Type into the search box (debounced, waits 450ms after typing).
    * Pass empty string to clear.
    */
   async search(keyword) {
     await this.searchInput.fill(keyword)
     // Debounce is 350ms; wait a bit longer to ensure list reload
+    await this.page.waitForTimeout(450)
+  }
+
+  /** Filter list by purpose (debounced 350ms). */
+  async filterByPurpose(purpose) {
+    await this.purposeInput.fill(purpose)
+    await this.page.waitForTimeout(450)
+  }
+
+  /** Filter list by provider (debounced 350ms). */
+  async filterByProvider(provider) {
+    await this.providerInput.fill(provider)
+    await this.page.waitForTimeout(450)
+  }
+
+  /** Add a tag chip to the filter bar by typing and pressing Enter. */
+  async addTagChip(tag) {
+    await this.tagInput.fill(tag)
+    await this.tagInput.press('Enter')
+    await this.page.waitForTimeout(200)
+  }
+
+  /** Remove a tag chip from the filter bar by clicking its × button. */
+  async removeTagChip(tag) {
+    await this.activeTagsEl
+      .locator(`.filter-chip-remove[data-tag="${tag}"]`)
+      .click()
+    await this.page.waitForTimeout(200)
+  }
+
+  /** Click the "clear all" chip that appears when any filter is active. */
+  async clearAllFilters() {
+    await this.page.locator('#skill-clear-filters').click()
     await this.page.waitForTimeout(450)
   }
 
