@@ -1324,6 +1324,33 @@ interface PaginationResult<T> {
 
 ---
 
+## `leaderboard:getTestSummaries`
+
+**入参**：无
+
+**返回**
+
+```typescript
+{
+  success: true,
+  data: {
+    [skill_id: string]: {
+      best_score:          number   // 该 Skill 历次测试中的最高平均分
+      best_baseline_id:    string   // 对应最高分所在基线 ID
+      best_baseline_name:  string   // 对应最高分所在基线名称
+      test_count:          number   // 该 Skill 参与的测试次数（跨所有基线）
+      staleness:           'current' | 'skill_updated' | 'baseline_updated' | 'both_updated'
+                                    // 最近一次测试的新鲜度
+    }
+  }
+}
+```
+
+> 用途：为 Skills 列表中每个 Skill 项注入测试分数徽标（`.skill-test-badge`）。
+> 一次性扫描所有项目结果，结果在渲染进程中缓存直到页面重新加载。
+
+---
+
 ## `leaderboard:export`
 
 **入参**
@@ -1386,7 +1413,7 @@ window.api = {
   workspace: { init },
   search: { global },
   log: { query },
-  leaderboard: { query, export: exp },
+  leaderboard: { query, getTestSummaries, export: exp },
 
   // on 类（事件监听，返回 unsubscribe 函数）
   on: (channel: string, callback: (data: any) => void) => () => void

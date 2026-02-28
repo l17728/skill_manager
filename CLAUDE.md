@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **305 unit tests + 37 e2e tests passing**.
+**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **314 unit tests + 37 e2e tests passing**.
 
 ### Specification Documents (read before modifying any module)
 
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev      # Launch Electron app (development mode, --dev flag)
 npm start        # Launch Electron app (production mode)
-npm test         # Run all 305 Jest unit tests
+npm test         # Run all 314 Jest unit tests
 npm run test:e2e # Run Playwright e2e tests (launches real Electron; port 9222 must be free)
 npm run test:watch    # Jest in watch mode
 npm run test:coverage # Jest with coverage report

@@ -20,7 +20,7 @@ const fs = require('fs')
 const path = require('path')
 
 const PAGES_DIR = path.join(__dirname, '../../renderer/js/pages')
-const PAGE_FILES = ['skill.js', 'baseline.js', 'project.js']
+const PAGE_FILES = ['skill.js', 'baseline.js', 'project.js', 'rankings.js']
 
 describe('CSP: no inline onclick= handlers in renderer pages', () => {
   PAGE_FILES.forEach(filename => {
@@ -94,10 +94,16 @@ describe('CSP: no inline onclick= handlers in renderer pages', () => {
     expect(src).toContain('[data-switch-tab]')
     expect(src).toContain('btn.dataset.switchTab')
   })
+
+  test('rankings.js expand rows use data-expandable + addEventListener', () => {
+    const src = fs.readFileSync(path.join(PAGES_DIR, 'rankings.js'), 'utf-8')
+    expect(src).toContain('data-expandable=')
+    expect(src).toContain('[data-expandable]')
+    expect(src).toContain('addEventListener')
+  })
 })
 
-describe('CSP: external data in innerHTML uses escHtml (project.js)', () => {
-  let src
+describe('CSP: external data in innerHTML uses escHtml (project.js)', () => {  let src
   beforeAll(() => {
     src = fs.readFileSync(path.join(PAGES_DIR, 'project.js'), 'utf-8')
   })
@@ -145,6 +151,42 @@ describe('CSP: external data in innerHTML uses escHtml (project.js)', () => {
   test('create modal skill purpose/provider are escaped', () => {
     expect(src).toContain('window.escHtml(s.purpose)')
     expect(src).toContain('window.escHtml(s.provider)')
+  })
+})
+
+describe('CSP: external data in innerHTML uses escHtml (rankings.js)', () => {
+  let src
+  beforeAll(() => {
+    src = fs.readFileSync(path.join(PAGES_DIR, 'rankings.js'), 'utf-8')
+  })
+
+  test('skill name is escaped in record row', () => {
+    expect(src).toContain('window.escHtml(r.skillName)')
+  })
+
+  test('skill version badge is escaped', () => {
+    expect(src).toContain('window.escHtml(r.skillVersionTested)')
+  })
+
+  test('project name is escaped', () => {
+    expect(src).toContain("window.escHtml(r.projectName || '')")
+  })
+
+  test('baseline option values and labels are escaped', () => {
+    expect(src).toContain('window.escHtml(id)')
+    expect(src).toContain('window.escHtml(name)')
+  })
+
+  test('group title baseline name is escaped', () => {
+    expect(src).toContain('window.escHtml(g.baselineName || g.baselineId)')
+  })
+
+  test('timeline polyline points are escaped', () => {
+    expect(src).toContain('window.escHtml(polyPts)')
+  })
+
+  test('timeline skill name in legend is escaped', () => {
+    expect(src).toContain('window.escHtml(sk.name)')
   })
 })
 
