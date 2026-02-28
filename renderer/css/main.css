@@ -609,28 +609,37 @@ select.form-input { cursor: pointer; }
 .tab-content.active { display: block; }
 
 /* ===== Rankings Page (Module 11) ===== */
-.rankings-filter-bar {
+.rankings-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+}
+.rankings-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
 }
 .rankings-input {
-  padding: 5px 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg-hover);
   color: var(--text-primary);
   font-size: 12px;
-  width: 160px;
   outline: none;
 }
 .rankings-input:focus { border-color: var(--accent); }
 .rankings-select {
-  padding: 5px 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg-hover);
@@ -646,9 +655,35 @@ select.form-input { cursor: pointer; }
   font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
-  white-space: nowrap;
+  padding: 2px 0;
 }
-.rankings-view-toggle { display: flex; gap: 2px; }
+.rankings-sidebar-section {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+.rankings-section-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.rankings-view-toggle { display: flex; gap: 4px; }
+.rankings-view-toggle .btn { flex: 1; }
+.rankings-sidebar-actions {
+  margin-top: auto;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rankings-sidebar-actions .btn { width: 100%; }
+.rankings-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
 
 #rankings-content { padding: 16px; }
 
