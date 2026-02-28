@@ -247,11 +247,20 @@ ${taskDescription}
 
   logService.info('cli-lite-service', 'generateBaselineCases start', { caseCount, model: useModel, descLen: taskDescription.length })
 
-  const result = await invokeCli(prompt, {
-    model: useModel,
-    timeoutMs: 60000,
-    workingDir: workspaceService.paths.cliTempSession(),
-  })
+  let result
+  try {
+    result = await invokeCli(prompt, {
+      model: useModel,
+      timeoutMs: 60000,
+      workingDir: workspaceService.paths.cliTempSession(),
+    })
+  } catch (err) {
+    const errCode   = (err && err.code)    || 'CLI_ERROR'
+    const errMsg    = (err && err.message) || ''
+    const errDetail = [errCode, errMsg].filter(Boolean).join(': ') || String(err)
+    logService.error('cli-lite-service', 'generateBaselineCases CLI call failed', { errCode, errMsg, model: useModel })
+    throw { code: errCode, message: `generateBaselineCases: ${errDetail}` }
+  }
 
   const rawOutput = result.result || ''
   const parsed = parseStructuredOutput(rawOutput)

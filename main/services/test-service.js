@@ -197,8 +197,10 @@ async function _executeTask(task, projectPath, config) {
     duration_ms   = cliResult.duration_ms || 0
   } catch (err) {
     status = 'failed'
-    error  = (err && (err.message || err.code)) ? (err.message || err.code) : String(err)
-    logService.error('test-service', 'task execution failed', { skillId: skillRef.ref_id, caseId: caseItem.case_id, errCode: err.code, errMsg: error })
+    // Preserve both code and message so the error field is self-explanatory
+    // e.g. "CLI_TIMEOUT: " or "CLI_NOT_AVAILABLE: Claude not found"
+    error = err ? [err.code, err.message].filter(Boolean).join(': ') || String(err) : String(err)
+    logService.error('test-service', 'task execution failed', { skillId: skillRef.ref_id, caseId: caseItem.case_id, errCode: err && err.code, errMsg: error })
   }
 
   const cliVersion = await cliService.getCliVersion()
@@ -453,8 +455,50 @@ async function startTest(projectId, { onProgress } = {}) {
 
   logService.info('test-service', 'Test run started', { projectId, totalTasks: tasks.length })
 
-  // Run loop in background — non-blocking return
-  setImmediate(() => _runLoop(projectId, projectPath, config, state, onProgress))
+  // Run loop in background — non-blocking return.
+  // Attach a catch so that unexpected loop crashes (e.g. disk-full on checkpoint
+  // write, or a throwing onProgress callback) mark the project 'interrupted' and
+  // notify the renderer, instead of leaving it stuck in 'running' forever.
+  setImmediate(() => {
+    _runLoop(projectId, projectPath, config, state, onProgress).catch(err => {
+      const errCode   = (err && err.code)    || 'UNKNOWN'
+      const errMsg    = (err && err.message) || ''
+      const errDetail = [errCode, errMsg].filter(Boolean).join(': ') || String(err)
+      logService.error('test-service', 'Run loop crashed unexpectedly', {
+        projectId,
+        errCode,
+        errMsg,
+        stack: (err && err.stack) ? err.stack.split('\n').slice(0, 5).join(' | ') : undefined,
+      })
+      // Update in-memory state
+      state.status = 'interrupted'
+      _runState.delete(projectId)
+      // Persist 'interrupted' to disk so UI reflects the failure after app restart
+      const found2 = _findProjectDir(projectId)
+      if (found2) {
+        const cfgPath2 = path.join(found2.fullPath, 'config.json')
+        const cfg2 = fileService.readJson(cfgPath2)
+        if (cfg2) {
+          cfg2.status     = 'interrupted'
+          cfg2.updated_at = new Date().toISOString()
+          try { fileService.writeJson(cfgPath2, cfg2) } catch (_) {}
+        }
+      }
+      // Notify the renderer; wrap in try-catch in case the callback itself throws
+      if (onProgress) {
+        try {
+          onProgress({
+            projectId,
+            completedTasks: state.completedTasks,
+            totalTasks:     state.tasks.length,
+            failedTasks:    state.failedTasks,
+            projectStatus:  'interrupted',
+            error:          errDetail,
+          })
+        } catch (_) {}
+      }
+    })
+  })
 
   return { started: true }
 }

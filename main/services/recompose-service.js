@@ -219,9 +219,12 @@ async function _doRecompose(projectId, projectPath, config, params, taskId, onCo
       })
     }
   } catch (err) {
-    logService.info('recompose-service', 'Recomposition failed', { projectId, err: String(err) })
+    const errCode   = (err && err.code)    || 'UNKNOWN'
+    const errMsg    = (err && err.message) || ''
+    const errDetail = [errCode, errMsg].filter(Boolean).join(': ') || String(err)
+    logService.error('recompose-service', 'Recomposition failed', { projectId, errCode, errMsg, errDetail })
     if (onComplete) {
-      onComplete({ projectId, taskId, status: 'failed', error: String(err.message || err.code || err) })
+      onComplete({ projectId, taskId, status: 'failed', error: errDetail })
     }
   }
 }

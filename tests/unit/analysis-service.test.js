@@ -376,6 +376,54 @@ describe('UC7-4: analysis_report.json has complete schema', () => {
   })
 })
 
+// ─── UC7-5: CLI error handling ────────────────────────────────────────────
+//
+// Verifies that CLI failures (timeout, not-available) are surfaced via the
+// onComplete callback with status:'failed' and a structured error field that
+// includes the error code, so the renderer can display a meaningful message.
+
+describe('UC7-5: CLI failures delivered through onComplete with structured error', () => {
+  test('CLI_TIMEOUT → onComplete status:failed, error contains CLI_TIMEOUT', async () => {
+    const { projectId } = makeAnalysisProject('uc7-5a')
+    jest.spyOn(cliService, 'invokeCli').mockRejectedValue({ code: 'CLI_TIMEOUT' })
+
+    const result = await new Promise(resolve => {
+      analysisService.runAnalysis(projectId, { onComplete: resolve })
+        .catch(resolve) // should not throw — errors go through onComplete
+    })
+
+    expect(result.status).toBe('failed')
+    expect(result.error).toContain('CLI_TIMEOUT')
+  })
+
+  test('CLI_NOT_AVAILABLE → onComplete status:failed, error contains CLI_NOT_AVAILABLE', async () => {
+    const { projectId } = makeAnalysisProject('uc7-5b')
+    jest.spyOn(cliService, 'invokeCli').mockRejectedValue({ code: 'CLI_NOT_AVAILABLE', message: 'Claude not found' })
+
+    const result = await new Promise(resolve => {
+      analysisService.runAnalysis(projectId, { onComplete: resolve }).catch(resolve)
+    })
+
+    expect(result.status).toBe('failed')
+    expect(result.error).toContain('CLI_NOT_AVAILABLE')
+    expect(result.error).toContain('Claude not found')
+  })
+
+  test('CLI_EXECUTION_ERROR → onComplete status:failed, no report file written', async () => {
+    const { projectId, projectPath } = makeAnalysisProject('uc7-5c')
+    jest.spyOn(cliService, 'invokeCli').mockRejectedValue({ code: 'CLI_EXECUTION_ERROR', stderr: 'bad exit' })
+
+    const result = await new Promise(resolve => {
+      analysisService.runAnalysis(projectId, { onComplete: resolve }).catch(resolve)
+    })
+
+    expect(result.status).toBe('failed')
+    expect(result.error).toContain('CLI_EXECUTION_ERROR')
+    // No report file should have been written
+    expect(fs.existsSync(path.join(projectPath, 'analysis_report.json'))).toBe(false)
+  })
+})
+
 // ─── buildAnalysisPrompt (unit test) ────────────────────────────────────
 
 describe('buildAnalysisPrompt', () => {

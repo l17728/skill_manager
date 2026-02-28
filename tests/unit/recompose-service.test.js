@@ -398,3 +398,48 @@ describe('buildMetaPromptTail', () => {
     expect(prompt).toContain('DIMENSION_FOCUS')
   })
 })
+
+// ─── UC8-5: CLI error handling ────────────────────────────────────────────
+//
+// Verifies that CLI failures (timeout, not-available) during recomposition
+// are surfaced via the onComplete callback with status:'failed' and a
+// structured error that includes the error code.
+
+describe('UC8-5: CLI failures delivered through onComplete with structured error', () => {
+  function waitForComplete(projectId, params = {}) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('UC8-5 timeout')), 5000)
+      recomposeService.executeRecompose(projectId, params, {
+        onComplete: (data) => { clearTimeout(timer); resolve(data) },
+      }).catch(err => { clearTimeout(timer); reject(err) })
+    })
+  }
+
+  test('CLI_TIMEOUT → onComplete status:failed, error contains CLI_TIMEOUT', async () => {
+    const { projectId } = makeRecomposeProject('uc8-5a')
+    jest.spyOn(cliService, 'invokeCli').mockRejectedValue({ code: 'CLI_TIMEOUT' })
+
+    const result = await waitForComplete(projectId)
+    expect(result.status).toBe('failed')
+    expect(result.error).toContain('CLI_TIMEOUT')
+  })
+
+  test('CLI_NOT_AVAILABLE → onComplete status:failed, error contains code and message', async () => {
+    const { projectId } = makeRecomposeProject('uc8-5b')
+    jest.spyOn(cliService, 'invokeCli').mockRejectedValue({ code: 'CLI_NOT_AVAILABLE', message: 'Claude not found' })
+
+    const result = await waitForComplete(projectId)
+    expect(result.status).toBe('failed')
+    expect(result.error).toContain('CLI_NOT_AVAILABLE')
+    expect(result.error).toContain('Claude not found')
+  })
+
+  test('RATE_LIMITED → onComplete status:failed, error contains RATE_LIMITED', async () => {
+    const { projectId } = makeRecomposeProject('uc8-5c')
+    jest.spyOn(cliService, 'invokeCli').mockRejectedValue({ code: 'RATE_LIMITED', stderr: '429 rate limit' })
+
+    const result = await waitForComplete(projectId)
+    expect(result.status).toBe('failed')
+    expect(result.error).toContain('RATE_LIMITED')
+  })
+})

@@ -615,3 +615,78 @@ describe('UC6-5: multi-skill parallel execution', () => {
     expect(cliService.invokeCli).toHaveBeenCalledTimes(8)
   })
 })
+
+// ─── UC6-6: Run-loop crash guard ──────────────────────────────────────────
+//
+// Verifies that unexpected errors outside _executeTask (e.g. a throwing
+// onProgress callback, or a disk-full on checkpoint write) do not leave the
+// project stuck in 'running'.  The crash guard must:
+//   1. Set project status to 'interrupted' on disk
+//   2. Deliver a final onProgress call with projectStatus:'interrupted'
+
+describe('UC6-6: run-loop crash guard persists interrupted status', () => {
+  test('onProgress callback throws → project marked interrupted, final callback delivered', async () => {
+    const { projectId, projectPath } = createTestProject('uc6-6a', 2)
+    setupMocks(['success', 'success'])
+
+    let callCount = 0
+    const finalData = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('UC6-6a timeout')), 6000)
+      testService.startTest(projectId, {
+        onProgress: (data) => {
+          callCount++
+          // First call (mid-task running progress) throws to simulate a buggy callback
+          if (callCount === 1) throw new Error('Simulated callback crash')
+          // Second call should be the crash-guard's 'interrupted' notification
+          if (data.projectStatus === 'interrupted') {
+            clearTimeout(timer)
+            resolve(data)
+          }
+        },
+      }).catch(err => { clearTimeout(timer); reject(err) })
+    })
+
+    expect(finalData.projectStatus).toBe('interrupted')
+    expect(finalData.error).toBeTruthy()
+
+    // config.json must reflect the interrupted state
+    const cfg = JSON.parse(fs.readFileSync(path.join(projectPath, 'config.json'), 'utf-8'))
+    expect(cfg.status).toBe('interrupted')
+  }, 8000)
+
+  test('CLI_NOT_AVAILABLE error records code and message in result error field', async () => {
+    const { projectId, projectPath } = createTestProject('uc6-6b', 1)
+    // Simulate claude binary not found
+    jest.spyOn(cliService, 'invokeCli').mockRejectedValue({ code: 'CLI_NOT_AVAILABLE', message: 'Claude not found' })
+    jest.spyOn(cliService, 'getCliVersion').mockResolvedValue('unknown')
+    jest.spyOn(cliService, 'parseStructuredOutput').mockReturnValue({ scores: MOCK_SCORES })
+
+    const finalData = await runAndWait(projectId)
+
+    expect(finalData.failedTasks).toBe(1)
+    expect(finalData.projectStatus).toBe('completed')
+
+    const resultPath = path.join(projectPath, 'results', 'skill_test_v1', 'case_001.json')
+    const result = JSON.parse(fs.readFileSync(resultPath, 'utf-8'))
+    expect(result.status).toBe('failed')
+    // Error field must contain both the code and the message
+    expect(result.error).toContain('CLI_NOT_AVAILABLE')
+    expect(result.error).toContain('Claude not found')
+  })
+
+  test('CLI_TIMEOUT error records code in result error field', async () => {
+    const { projectId, projectPath } = createTestProject('uc6-6c', 1)
+    jest.spyOn(cliService, 'invokeCli').mockRejectedValue({ code: 'CLI_TIMEOUT' })
+    jest.spyOn(cliService, 'getCliVersion').mockResolvedValue('unknown')
+    jest.spyOn(cliService, 'parseStructuredOutput').mockReturnValue({ scores: MOCK_SCORES })
+
+    const finalData = await runAndWait(projectId)
+
+    expect(finalData.failedTasks).toBe(1)
+
+    const resultPath = path.join(projectPath, 'results', 'skill_test_v1', 'case_001.json')
+    const result = JSON.parse(fs.readFileSync(resultPath, 'utf-8'))
+    expect(result.status).toBe('failed')
+    expect(result.error).toContain('CLI_TIMEOUT')
+  })
+})

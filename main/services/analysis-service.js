@@ -243,8 +243,11 @@ async function _doRunAnalysis(projectId, projectPath, config, taskId, onComplete
 
     if (onComplete) onComplete({ projectId, taskId, status: 'completed' })
   } catch (err) {
-    logService.error('analysis-service', 'Analysis failed', { projectId, err: String(err.message || err.code || err) })
-    if (onComplete) onComplete({ projectId, taskId, status: 'failed', error: String(err.message || err.code || err) })
+    const errCode   = (err && err.code)    || 'UNKNOWN'
+    const errMsg    = (err && err.message) || ''
+    const errDetail = [errCode, errMsg].filter(Boolean).join(': ') || String(err)
+    logService.error('analysis-service', 'Analysis failed', { projectId, errCode, errMsg, errDetail })
+    if (onComplete) onComplete({ projectId, taskId, status: 'failed', error: errDetail })
   }
 }
 
