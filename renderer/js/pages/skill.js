@@ -58,10 +58,12 @@ const SkillPage = (() => {
 
     listEl.innerHTML = res.data.items.map(skill => `
       <div class="skill-item" data-id="${skill.id}" data-preview="${escHtml(skill.contentPreview || '')}">
-        <div class="skill-item-name">${escHtml(skill.name)}</div>
+        <div class="skill-item-name">
+          ${escHtml(skill.name)}
+          <span class="version-badge" style="margin-left:4px;vertical-align:middle">${escHtml(skill.version)}</span>
+        </div>
         <div class="skill-item-meta">
           <span class="type-badge ${escHtml(skill.type || 'skill')}">${skill.type === 'agent' ? 'A' : 'S'}</span>
-          <span class="version-badge">${skill.version}</span>
           <span class="category-badge clickable-tag" data-tag="${escHtml(skill.purpose)}" style="cursor:pointer">${escHtml(skill.purpose)}</span>
           <span style="color:var(--text-muted);font-size:11px">${escHtml(skill.provider)}</span>
           ${skill.pendingTagCount > 0 ? `<span class="tag pending">${skill.pendingTagCount} pending</span>` : ''}

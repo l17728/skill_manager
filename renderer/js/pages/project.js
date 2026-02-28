@@ -705,9 +705,19 @@ const ProjectPage = (() => {
     RANDOM_SUBSET:    { bg: 'rgba(239,68,68,0.2)',    text: '#f87171' },
   }
 
+  // P2-2: User-friendly Chinese labels for strategy names
+  const _STRAT_LABELS = {
+    GREEDY:           '全面强化',
+    DIMENSION_FOCUS:  '聚焦弱项',
+    SEGMENT_EXPLORE:  '随机探索',
+    CROSS_POLLINATE:  '交叉融合',
+    RANDOM_SUBSET:    '随机组合',
+  }
+
   function _stratBadge(strategy) {
-    const c = _STRAT_COLORS[strategy] || _STRAT_COLORS.GREEDY
-    return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600;background:${c.bg};color:${c.text}">${window.escHtml(strategy || 'GREEDY')}</span>`
+    const c     = _STRAT_COLORS[strategy] || _STRAT_COLORS.GREEDY
+    const label = _STRAT_LABELS[strategy] || strategy || 'GREEDY'
+    return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600;background:${c.bg};color:${c.text}" title="${window.escHtml(strategy || '')}">${window.escHtml(label)}</span>`
   }
 
   function _renderIterationReport(report) {
