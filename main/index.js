@@ -133,7 +133,18 @@ function createWindow() {
 app.whenReady().then(async () => {
   // Support --workspace=<path> for e2e testing (fresh isolated workspace per test run)
   const wsArg = process.argv.find(a => a.startsWith('--workspace='))
-  if (wsArg) workspaceService.setWorkspace(wsArg.slice('--workspace='.length))
+  if (wsArg) {
+    // E2E test mode: use the provided temp directory
+    workspaceService.setWorkspace(wsArg.slice('--workspace='.length))
+  } else if (app.isPackaged) {
+    // Production (packaged .exe): the ASAR archive is read-only, so the default
+    // path (__dirname/../../workspace) would point inside app.asar and every
+    // mkdirSync / writeFileSync call would throw ENOTDIR.
+    // Use app.getPath('userData') instead — always writable on Windows:
+    //   C:\Users\<user>\AppData\Roaming\SkillManager\workspace
+    workspaceService.setWorkspace(path.join(app.getPath('userData'), 'workspace'))
+  }
+  // Dev mode: workspace/ at project root (default in workspace-service.js) — leave as-is.
 
   // Start session log first — every subsequent log goes into this file
   workspaceService.initWorkspace()
