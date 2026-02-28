@@ -11,6 +11,7 @@ const registerAnalysisHandlers   = require('./analysis')
 const registerRecomposeHandlers  = require('./recompose')
 const registerIterationHandlers  = require('./iteration')
 const registerTraceHandlers      = require('./trace')
+const registerLeaderboardHandlers = require('./leaderboard')
 
 /**
  * Register all IPC handlers.
@@ -28,6 +29,7 @@ function registerAllHandlers(mainWindow) {
   registerRecomposeHandlers(mainWindow)
   registerIterationHandlers(mainWindow)
   registerTraceHandlers(mainWindow)
+  registerLeaderboardHandlers(mainWindow)
 }
 
 module.exports = { registerAllHandlers }

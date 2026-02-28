@@ -385,4 +385,37 @@ function _seedProject(workspaceDir, project) {
   return { id, projectDir, projectPath }
 }
 
-module.exports = { createTestWorkspace, _seedSkill, _seedBaseline, _seedProject }
+/**
+ * Seed a project that already has a completed results/summary.json.
+ * This is a convenience wrapper around _seedProject for leaderboard E2E tests.
+ *
+ * @param {string} workspaceDir
+ * @param {object} opts
+ * @param {string} opts.projectId   - Explicit project ID
+ * @param {string} opts.projectName
+ * @param {object[]} opts.skillRefs - [{ref_id, name, version, local_path}]
+ * @param {object}   opts.baselineRef - {ref_id, name, version, local_path, purpose}
+ * @param {object[]} opts.ranking   - summary.json ranking array
+ * @param {string}   [opts.testedAt] - ISO timestamp for summary.generated_at
+ * @returns {{ id, projectDir, projectPath }}
+ */
+function _seedProjectWithSummary(workspaceDir, { projectId, projectName, skillRefs = [], baselineRef, ranking = [], testedAt }) {
+  const summary = {
+    project_id: projectId,
+    baseline_id: baselineRef ? baselineRef.ref_id : '',
+    total_cases: ranking.reduce((s, r) => s + (r.completed_cases || 0) + (r.failed_cases || 0), 0),
+    generated_at: testedAt || new Date().toISOString(),
+    ranking,
+  }
+  return _seedProject(workspaceDir, {
+    id: projectId,
+    name: projectName,
+    status: 'completed',
+    skills: skillRefs,
+    baselines: baselineRef ? [baselineRef] : [],
+    progress: { total_tasks: ranking.length, completed_tasks: ranking.length, failed_tasks: 0, last_checkpoint: ranking.length },
+    summary,
+  })
+}
+
+module.exports = { createTestWorkspace, _seedSkill, _seedBaseline, _seedProject, _seedProjectWithSummary }

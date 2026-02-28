@@ -15,6 +15,9 @@ const SkillPage = (() => {
   let activePurpose    = ''
   let activeProvider   = ''
 
+  // ─── Test summaries cache (for badge display) ──────────────────────────────
+  let _testSummaries = null   // null = not loaded yet; {} = no results
+
   // ─── List ──────────────────────────────────────────────────────────────────
 
   async function loadList(keyword = '') {
@@ -87,11 +90,49 @@ const SkillPage = (() => {
 
     // Hover preview
     setupHoverPreview(listEl)
+
+    // Test score badges (async — non-blocking)
+    _injectTestBadges(listEl)
   }
 
   function prevPage() { if (currentPage > 1) { currentPage--; loadList(_currentKeyword()) } }
   function nextPage(total) { if (currentPage < total) { currentPage++; loadList(_currentKeyword()) } }
   function _currentKeyword() { return document.getElementById('skill-search').value.trim() }
+
+  // ─── Test badges ───────────────────────────────────────────────────────────
+
+  /**
+   * Fetch test summaries (cached per session) and inject score badges into
+   * each visible skill-item. Clicking a badge navigates to the Rankings page.
+   */
+  async function _injectTestBadges(listEl) {
+    if (!_testSummaries) {
+      const res = await window.api.leaderboard.getTestSummaries()
+      _testSummaries = res.success ? (res.data || {}) : {}
+    }
+    listEl.querySelectorAll('.skill-item').forEach(item => {
+      const sid     = item.dataset.id
+      const summary = _testSummaries[sid]
+      if (!summary) return
+
+      const sc  = summary.best_score >= 80 ? 'hi' : summary.best_score >= 60 ? 'mid' : 'lo'
+      const stale = summary.staleness !== 'current' ? ' stale' : ''
+      const badge = document.createElement('span')
+      badge.className = `skill-test-badge ${sc}${stale}`
+      badge.title = `最高分: ${summary.best_score} · 基线: ${summary.best_baseline_name} · ${summary.test_count} 次测试`
+      badge.textContent = `✓ ${summary.best_score}`
+      badge.addEventListener('click', e => {
+        e.stopPropagation()
+        const name = (item.querySelector('.skill-item-name') || {}).textContent || ''
+        if (window.RankingsPage) window.RankingsPage.navigateWithFilter({ skillName: name.trim() })
+      })
+      const meta = item.querySelector('.skill-item-meta')
+      if (meta) meta.appendChild(badge)
+    })
+  }
+
+  /** Invalidate test summaries cache (call after a test run completes). */
+  function _clearTestSummariesCache() { _testSummaries = null }
 
   // ─── Detail ────────────────────────────────────────────────────────────────
 
@@ -541,6 +582,7 @@ const SkillPage = (() => {
     reviewTag,
     rollback,
     prevPage, nextPage,
+    clearTestSummariesCache: _clearTestSummariesCache,
   }
 })()
 

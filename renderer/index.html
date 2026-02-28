@@ -15,6 +15,7 @@
     <button class="nav-tab active" data-page="skill">Skills &amp; Agents</button>
     <button class="nav-tab" data-page="baseline">Baselines</button>
     <button class="nav-tab" data-page="project">Projects</button>
+    <button class="nav-tab" data-page="rankings">Rankings</button>
   </div>
   <div class="topbar-right">
     <div id="cli-status">
@@ -264,6 +265,37 @@
 
   </div><!-- #content -->
 </div><!-- #main -->
+
+<!-- ===== Rankings Page ===== -->
+<div id="page-rankings" class="page">
+  <div id="rankings-filter-bar" class="rankings-filter-bar">
+    <input  id="rankings-search"          type="text"      placeholder="搜索 Skill 名称…" class="rankings-input">
+    <select id="rankings-baseline-select" class="rankings-select"><option value="">全部基线</option></select>
+    <select id="rankings-purpose-select"  class="rankings-select"><option value="">全部用途</option></select>
+    <select id="rankings-period-select"   class="rankings-select">
+      <option value="">全部时间</option>
+      <option value="30">近 30 天</option>
+      <option value="90">近 90 天</option>
+    </select>
+    <label class="rankings-stale-label">
+      <input id="rankings-include-stale" type="checkbox" checked> 包含过期成绩
+    </label>
+    <button id="rankings-clear-btn"   class="btn btn-secondary btn-sm">× 清除</button>
+    <div class="rankings-view-toggle">
+      <button id="rankings-view-rank-btn"     class="btn btn-sm active" data-view="rank">排名视图</button>
+      <button id="rankings-view-timeline-btn" class="btn btn-sm"        data-view="timeline">时间线</button>
+    </div>
+    <button id="rankings-export-btn" class="btn btn-secondary btn-sm">↓ 导出 CSV</button>
+  </div>
+
+  <div id="rankings-content">
+    <div id="rankings-list-body"></div>
+    <div id="rankings-timeline-body" class="hidden">
+      <div class="rankings-timeline-placeholder">请先选择一个基线以查看时间线视图</div>
+    </div>
+    <div id="rankings-empty" class="empty-state hidden">暂无测试成绩记录</div>
+  </div>
+</div>
 
 <!-- ===== Hover Preview ===== -->
 <div class="hover-preview" id="hover-preview"></div>
@@ -533,6 +565,7 @@
 <script src="js/pages/skill.js"></script>
 <script src="js/pages/baseline.js"></script>
 <script src="js/pages/project.js"></script>
+<script src="js/pages/rankings.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

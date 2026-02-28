@@ -57,6 +57,7 @@ async function init() {
   SkillPage.init()
   BaselinePage.init()
   ProjectPage.init()
+  RankingsPage.init()
 
   // Listen for CLI status changes
   window.api.on('cli:status:change', (data) => {

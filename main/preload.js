@@ -34,6 +34,8 @@ const INVOKE_CHANNELS = [
 
   'trace:getProjectEnv', 'trace:compareEnvs',
 
+  'leaderboard:query', 'leaderboard:getTestSummaries', 'leaderboard:export',
+
   'workspace:init', 'search:global', 'log:query',
 ]
 
@@ -175,6 +177,13 @@ contextBridge.exposeInMainWorld('api', {
   trace: {
     getProjectEnv: (args) => ipcRenderer.invoke('trace:getProjectEnv', args),
     compareEnvs:   (args) => ipcRenderer.invoke('trace:compareEnvs', args),
+  },
+
+  // Leaderboard module (Module 11)
+  leaderboard: {
+    query:            (args) => ipcRenderer.invoke('leaderboard:query', args),
+    getTestSummaries: ()     => ipcRenderer.invoke('leaderboard:getTestSummaries'),
+    export:           (args) => ipcRenderer.invoke('leaderboard:export', args),
   },
 
   /**

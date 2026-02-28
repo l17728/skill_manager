@@ -304,11 +304,46 @@ const ProjectPage = (() => {
       </div>
     `).join('')
 
+    // Layer 2: 6-dimension comparison table
+    const DIMS = [
+      ['Functional Correctness', 'functional_correctness', 30],
+      ['Robustness',             'robustness',             20],
+      ['Readability',            'readability',            15],
+      ['Conciseness',            'conciseness',            15],
+      ['Complexity Control',     'complexity_control',     10],
+      ['Format Compliance',      'format_compliance',      10],
+    ]
+    const skillHeaders = summary.ranking.map(r =>
+      `<th>${window.escHtml(r.skill_name)} <span class="version-badge">${window.escHtml(r.skill_version)}</span></th>`
+    ).join('')
+    const dimRows = DIMS.map(([label, key, max]) => {
+      const cells = summary.ranking.map(r => {
+        const v = (r.score_breakdown || {})[key]
+        if (v == null) return `<td style="color:var(--text-muted)">—</td>`
+        const cls = v >= max * 0.8 ? 'score-hi' : v >= max * 0.6 ? 'score-mid' : 'score-lo'
+        return `<td class="${cls}" style="font-weight:600">${Math.round(v)}<span style="font-size:10px;color:var(--text-muted)">/${max}</span></td>`
+      }).join('')
+      return `<tr><td class="dim-label">${window.escHtml(label)}</td>${cells}</tr>`
+    }).join('')
+
+    const dimTable = summary.ranking.length > 1 ? `
+      <div style="margin-top:16px">
+        <div class="detail-section-title">Dimension Comparison</div>
+        <div style="overflow-x:auto;margin-top:8px">
+          <table class="dim-table">
+            <thead><tr><th>Dimension</th>${skillHeaders}</tr></thead>
+            <tbody>${dimRows}</tbody>
+          </table>
+        </div>
+      </div>
+    ` : ''
+
     body.innerHTML = `
       <div style="padding:12px">
         <div class="detail-section-title">Rankings</div>
         <div style="margin-top:8px">${rankHtml}</div>
         <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">${summary.total_cases} total cases</div>
+        ${dimTable}
       </div>
     `
   }

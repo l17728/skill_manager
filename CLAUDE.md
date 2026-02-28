@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 10 modules across 5 implementation phases are fully implemented with **269 unit tests + 27 e2e tests passing**.
+**Prompt/Skill Comparison, Verification & Optimization Platform** — an Electron desktop app for managing, testing, comparing, and optimizing Claude Skills/Agents. All 11 modules across 5 implementation phases are fully implemented with **305 unit tests + 37 e2e tests passing**.
 
 ### Specification Documents (read before modifying any module)
 
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev      # Launch Electron app (development mode, --dev flag)
 npm start        # Launch Electron app (production mode)
-npm test         # Run all 269 Jest unit tests
+npm test         # Run all 305 Jest unit tests
 npm run test:e2e # Run Playwright e2e tests (launches real Electron; port 9222 must be free)
 npm run test:watch    # Jest in watch mode
 npm run test:coverage # Jest with coverage report
@@ -113,6 +113,7 @@ renderer/
       skill.js          # Skill management page IIFE → window.SkillPage
       baseline.js       # Baseline management page IIFE → window.BaselinePage
       project.js        # Project management page IIFE → window.ProjectPage
+      rankings.js       # Rankings & Leaderboard page IIFE → window.RankingsPage
     components/
       modal.js          # openModal(id) / closeModal(id)
       notify.js         # window.notify(message, type) toast notifications
@@ -137,11 +138,13 @@ tests/
       skill-page.js               # full SkillPage POM (import, select, edit, tag, search, rollback, delete)
       baseline-page.js            # BaselinePage POM (importBaseline, selectBaseline, rollbackVersion, …)
       project-page.js             # ProjectPage POM (createProject, clickDelete, switchTab, …)
+      rankings-page.js            # RankingsPage POM (navigate, search, filter, view toggle, assertions)
     specs/
       skill-management.spec.js    # TC-001~TC-008,TC-010 active, TC-009 skipped (needs live CLI)
       baseline-management.spec.js # TC-B-001~TC-B-006 active, TC-B-007 skipped (needs live CLI)
       project-management.spec.js       # TC-P-001~TC-P-004,TC-P-006~TC-P-010 active, TC-P-005 skipped (needs live CLI)
       project-detail-completed.spec.js # TC-PC-001~TC-PC-003: pre-seeded completed project, no CLI
+      rankings.spec.js                 # TC-R-001~TC-R-010: Rankings & Leaderboard (no CLI needed)
     action-reference/
       action-reference.json       # function-call-style UI API doc for Claude agent test generation
     nl-test-scripts/
@@ -195,7 +198,7 @@ workspace/
 
 ### Renderer Page Architecture
 
-Each page (`skill.js`, `baseline.js`, `project.js`) is an IIFE that returns a public API (`{ init, ... }`) assigned to `window.<PageName>`. `app.js` calls `SkillPage.init()`, `BaselinePage.init()`, `ProjectPage.init()` on `DOMContentLoaded`.
+Each page (`skill.js`, `baseline.js`, `project.js`, `rankings.js`) is an IIFE that returns a public API (`{ init, ... }`) assigned to `window.<PageName>`. `app.js` calls `SkillPage.init()`, `BaselinePage.init()`, `ProjectPage.init()`, `RankingsPage.init()` on `DOMContentLoaded`.
 
 **Layout**: `renderer/index.html` has a top bar + single `#content` area (no sidebar). The `#sidebar` element and all `.sidebar-*` CSS were removed — the top bar tabs (Skills / Baselines / Projects) are sufficient navigation for a 3-page app, and removing the 200px sidebar gives more horizontal space to the 3-column content layout.
 
@@ -221,6 +224,7 @@ Each page (`skill.js`, `baseline.js`, `project.js`) is an IIFE that returns a pu
 | 8 Skill recomposition | `recompose-service.js` | `ipc/recompose.js` | `recompose-service.test.js` |
 | 9 Iteration loop | `iteration-service.js` | `ipc/iteration.js` | `iteration-service.test.js` |
 | 10 Env traceability | `trace-service.js` | `ipc/trace.js` | `trace-service.test.js` |
+| 11 Rankings & Leaderboard | `leaderboard-service.js` | `ipc/leaderboard.js` | `leaderboard-service.test.js` |
 
 ### Test Isolation Pattern
 
