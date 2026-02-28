@@ -17,6 +17,7 @@
  *   - All assertions are state-based (Playwright auto-wait); no fixed sleeps
  *     except the 450ms debounce wait after search input
  *   - Auto-tag test skipped (requires real Claude CLI + API key)
+ *   - TC-019 runs in a separate describe block with its own empty-workspace Electron instance
  */
 
 const { test, expect, chromium } = require('@playwright/test')
@@ -357,6 +358,24 @@ test.describe('Skill Management', () => {
     await expect(skillPage.importModal).not.toHaveClass(/open/, { timeout: 2000 })
   })
 
+  // ─── TC-020: Hover preview ────────────────────────────────────────────────
+
+  test('TC-020: hovering a skill item shows the hover preview card', async () => {
+    // Clear any residual filter state from previous tests
+    await skillPage.filterByPurpose('')
+    await skillPage.filterByProvider('')
+    await skillPage.search('')
+
+    // Wait for at least one skill item to be visible
+    const firstItem = page.locator('#skill-list .skill-item').first()
+    await expect(firstItem).toBeVisible({ timeout: 5000 })
+
+    // Hover triggers mouseenter → style.display:'block' on #hover-preview
+    await firstItem.hover()
+
+    await expect(page.locator('#hover-preview')).toBeVisible({ timeout: 3000 })
+  })
+
   // ─── TC-016: Import with description + author ─────────────────────────────
 
   test('TC-016: import with description and author — both visible in detail', async () => {
@@ -381,5 +400,55 @@ test.describe('Skill Management', () => {
     await expect(
       skillPage.detailBody.getByText('A full description for the e2e test.')
     ).toBeVisible({ timeout: 5000 })
+  })
+})
+
+// ─── TC-019: Empty workspace guide card (separate lifecycle) ──────────────────
+//
+// Needs its own Electron instance with a completely empty workspace so that the
+// Skills list has zero items and shows the guide card (not the filtered-empty state).
+
+test.describe('Skills — empty workspace guide card', () => {
+  let browser19, page19, app19, workspace19
+
+  test.beforeAll(async () => {
+    workspace19 = createTestWorkspace()  // no skills seeded
+    app19       = await launchApp(workspace19.dir)
+    browser19   = await chromium.connectOverCDP(`http://localhost:${CDP_PORT}`)
+    const ctx   = browser19.contexts()[0]
+    let attempts = 0
+    while (ctx.pages().length === 0 && attempts++ < 20) {
+      await new Promise(r => setTimeout(r, 200))
+    }
+    page19 = ctx.pages()[0] || await ctx.newPage()
+    await page19.waitForLoadState('domcontentloaded')
+  })
+
+  test.afterAll(async () => {
+    try { await browser19.disconnect() } catch (_) {}
+    if (app19) await app19.close()
+    workspace19.cleanup()
+  })
+
+  test('TC-019: empty skill workspace shows guide card with import button', async () => {
+    // Skills & Agents is the default page — no navigation needed
+    await expect(page19.locator('#skill-list')).toBeVisible({ timeout: 5000 })
+
+    // Guide card appears when workspace has no skills (no active filter)
+    await expect(
+      page19.locator('#skill-list .guide-card')
+    ).toBeVisible({ timeout: 5000 })
+    await expect(
+      page19.locator('#skill-list').getByText('还没有 Skill')
+    ).toBeVisible()
+
+    // Guide card contains a quick-import button
+    await expect(page19.locator('#empty-skill-import-btn')).toBeVisible()
+
+    // Clicking the guide-card button opens the import modal
+    await page19.locator('#empty-skill-import-btn').click()
+    await expect(
+      page19.locator('#skill-import-modal')
+    ).toHaveClass(/open/, { timeout: 3000 })
   })
 })

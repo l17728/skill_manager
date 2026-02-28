@@ -32,8 +32,12 @@ async function launchApp(workspaceDir) {
   const startedAt = Date.now()
 
   // Before spawning, wait for the port to be free in case a previous instance
-  // hasn't released it yet (common on Windows where sockets linger after exit).
-  await _waitForPortFree(CDP_PORT, 8000)
+  // hasn't released it yet.  On Windows, TCP TIME_WAIT keeps the socket
+  // "locked" for 60-120 s after the process exits — 8 s was consistently not
+  // enough when a secondary describe-block Electron starts immediately after
+  // the previous one's afterAll.  75 s covers the worst-case TIME_WAIT window
+  // without slowing down tests when the port is already free (early return).
+  await _waitForPortFree(CDP_PORT, 75000)
 
   console.log(`[app-launcher] Launching Electron — workspace: ${workspaceDir}`)
   console.log(`[app-launcher] Electron binary: ${electronPath}`)
@@ -117,7 +121,7 @@ async function launchApp(workspaceDir) {
  *
  * The only reliable way to know Electron *can* bind is to try binding ourselves.
  */
-async function _waitForPortFree(port, timeoutMs = 8000) {
+async function _waitForPortFree(port, timeoutMs = 75000) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     const bindable = await new Promise((resolve) => {

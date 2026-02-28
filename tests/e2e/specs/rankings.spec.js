@@ -353,5 +353,25 @@ test.describe('Rankings — Skill test badge', () => {
     const text = await badge.textContent()
     expect(text.trim()).toMatch(/^✓\s*\d+$/)
   })
+
+  // ─── TC-R-013: Badge click navigates to Rankings ──────────────────────────
+
+  test('TC-R-013: clicking skill test badge navigates to Rankings and pre-fills search', async () => {
+    // Badge should still be visible from TC-R-010
+    const badge = page2.locator('.skill-test-badge').first()
+    await expect(badge).toBeVisible({ timeout: 8000 })
+
+    // Click the badge — triggers RankingsPage.navigateWithFilter({ skillName })
+    await badge.click()
+
+    // Rankings page should now be active
+    await expect(page2.locator('#page-rankings')).toBeVisible({ timeout: 5000 })
+
+    // Search input should be pre-filled with the skill name
+    // (The handler reads .skill-item-name textContent which includes the version badge,
+    //  so the value starts with SKILL_A_NAME and may have trailing version text.)
+    const searchVal = await page2.locator('#rankings-search').inputValue()
+    expect(searchVal).toContain(SKILL_A_NAME)
+  })
 })
 

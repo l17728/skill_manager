@@ -274,3 +274,52 @@ test.describe('Baseline Management', () => {
     await baselinePage.importModal.locator('.btn-secondary.modal-close').click()
   })
 })
+
+// ─── TC-B-014: Empty workspace guide card (separate lifecycle) ────────────────
+
+test.describe('Baselines — empty workspace guide card', () => {
+  let browser14, page14, app14, workspace14
+
+  test.beforeAll(async () => {
+    workspace14 = createTestWorkspace()  // no baselines seeded
+    app14       = await launchApp(workspace14.dir)
+    browser14   = await chromium.connectOverCDP(`http://localhost:${CDP_PORT}`)
+    const ctx   = browser14.contexts()[0]
+    let attempts = 0
+    while (ctx.pages().length === 0 && attempts++ < 20) {
+      await new Promise(r => setTimeout(r, 200))
+    }
+    page14 = ctx.pages()[0] || await ctx.newPage()
+    await page14.waitForLoadState('domcontentloaded')
+  })
+
+  test.afterAll(async () => {
+    try { await browser14.disconnect() } catch (_) {}
+    if (app14) await app14.close()
+    workspace14.cleanup()
+  })
+
+  test('TC-B-014: empty baseline workspace shows guide card with import button', async () => {
+    const appPage14 = new AppPage(page14)
+    await appPage14.navigateTo('baseline')
+
+    await expect(page14.locator('#baseline-list')).toBeVisible({ timeout: 5000 })
+
+    // Guide card appears when workspace has no baselines (no active filter)
+    await expect(
+      page14.locator('#baseline-list .guide-card')
+    ).toBeVisible({ timeout: 5000 })
+    await expect(
+      page14.locator('#baseline-list').getByText('还没有测试基线')
+    ).toBeVisible()
+
+    // Guide card contains a quick-import button
+    await expect(page14.locator('#empty-baseline-import-btn')).toBeVisible()
+
+    // Clicking the guide-card button opens the import modal
+    await page14.locator('#empty-baseline-import-btn').click()
+    await expect(
+      page14.locator('#baseline-import-modal')
+    ).toBeVisible({ timeout: 3000 })
+  })
+})

@@ -927,34 +927,46 @@ npm run build
 
 ### 15.1 数据存储位置
 
-所有数据保存在程序根目录的 `workspace/` 文件夹下，结构如下：
+**安装版（.exe 安装后运行）**：所有数据保存在 Windows 用户数据目录，路径为：
 
 ```
-skill_manager/
-└── workspace/
-    ├── skills/        ← 所有 Skill 文件（按 purpose/provider 自动分层）
-    ├── baselines/     ← 所有基线文件
-    ├── projects/      ← 所有测试项目（含测试结果、分析报告）
-    ├── cli/           ← CLI 配置和临时会话缓存
-    └── logs/          ← 操作日志（每次启动生成一个新文件）
+C:\Users\<你的用户名>\AppData\Roaming\SkillManager\workspace\
+```
+
+> 快捷方式：在资源管理器地址栏输入 `%APPDATA%\SkillManager\workspace` 直接打开。
+
+**开发模式（npm run dev）**：数据保存在项目根目录的 `workspace/` 文件夹下。
+
+两种模式下的目录结构相同：
+
+```
+workspace/
+├── skills/        ← 所有 Skill 文件（按 purpose/provider 自动分层）
+├── baselines/     ← 所有基线文件
+├── projects/      ← 所有测试项目（含测试结果、分析报告）
+├── cli/           ← CLI 配置和临时会话缓存
+└── logs/          ← 操作日志（每次启动生成一个新文件）
 ```
 
 ### 15.2 备份数据
 
-**完整备份**：直接复制整个 `workspace/` 文件夹到其他位置：
+**完整备份**：在命令提示符中执行以下命令（将 `<你的用户名>` 替换为实际用户名）：
 
 ```
-# 打开命令提示符，进入程序目录后执行：
-xcopy /E /I workspace "D:\我的备份\skillmanager_backup_20240601"
+xcopy /E /I "%APPDATA%\SkillManager\workspace" "D:\我的备份\skillmanager_backup_20240601"
 ```
 
 ### 15.3 恢复数据
 
-将备份的 `workspace/` 文件夹复制回程序根目录，**覆盖原有文件夹**，重启应用即可恢复。
+关闭应用后，将备份目录复制回原位置，**覆盖原有文件夹**，重启应用即可恢复：
+
+```
+xcopy /E /I /Y "D:\我的备份\skillmanager_backup_20240601" "%APPDATA%\SkillManager\workspace"
+```
 
 ### 15.4 查看操作日志
 
-日志文件位于 `workspace/logs/`，以 `YYYY-MM-DD_HH-MM-SS.jsonl` 命名（如 `2024-06-01_14-30-00.jsonl`）。
+日志文件位于 `%APPDATA%\SkillManager\workspace\logs\`，以 `YYYY-MM-DD_HH-MM-SS.jsonl` 命名（如 `2024-06-01_14-30-00.jsonl`）。
 
 用**记事本**打开日志文件，每行是一条 JSON 记录，包含操作类型、时间、成功/失败状态等信息，适合排查问题时查阅。
 
@@ -1010,7 +1022,7 @@ xcopy /E /I workspace "D:\我的备份\skillmanager_backup_20240601"
 **解决步骤**：
 1. 确认 CLI 状态为绿色（在线）
 2. 打开浏览器访问 `console.anthropic.com` 确认网络正常
-3. 查看最新日志：打开 `workspace/logs/` 中最新的 `.jsonl` 文件，搜索 `error` 关键词找到错误原因
+3. 查看最新日志：打开 `%APPDATA%\SkillManager\workspace\logs\` 中最新的 `.jsonl` 文件，搜索 `error` 关键词找到错误原因
 
 ---
 
@@ -1021,7 +1033,7 @@ xcopy /E /I workspace "D:\我的备份\skillmanager_backup_20240601"
 **解决步骤**：
 1. 等待约 3 分钟
 2. 如仍未完成，重启应用（按 `Ctrl + C` 终止，再执行 `npm run dev`）
-3. 查看 `workspace/skills/.../.../auto_tag_log/` 目录下的日志文件了解失败原因
+3. 查看 `%APPDATA%\SkillManager\workspace\skills\...\..\auto_tag_log\` 目录下的日志文件了解失败原因
 
 ---
 
@@ -1072,13 +1084,19 @@ Test（完成测试）→ Analysis（运行分析）→ Recompose（执行重组
 
 > ⚠️ **警告**：此操作删除所有 Skill、Baseline、Project 数据，**不可恢复**，请先备份。
 
-在命令提示符中执行（确保已进入 skill_manager 目录）：
+**安装版**：在命令提示符中执行：
+
+```
+rmdir /S /Q "%APPDATA%\SkillManager\workspace"
+```
+
+**开发模式**：进入项目目录后执行：
 
 ```
 rmdir /S /Q workspace
 ```
 
-重启应用后，`workspace/` 会自动重新创建为空状态。
+重启应用后，workspace 目录会自动重新创建为空状态。
 
 ---
 
