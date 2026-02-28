@@ -37,7 +37,21 @@ const SkillPage = (() => {
     const paginationEl = document.getElementById('skill-pagination')
 
     if (res.data.items.length === 0) {
-      listEl.innerHTML = `<div class="empty-state" style="padding:30px"><div class="icon">🔮</div><div class="title">No skills found</div></div>`
+      const hasFilter = keyword || activeTagFilters.length || activePurpose || activeProvider
+      if (hasFilter) {
+        listEl.innerHTML = `<div class="empty-state" style="padding:30px"><div class="icon">🔮</div><div class="title">No skills found</div><div class="sub">Try clearing filters</div></div>`
+      } else {
+        listEl.innerHTML = `
+          <div class="empty-state guide-card" style="padding:30px;text-align:center">
+            <div class="icon">🔮</div>
+            <div class="title">还没有 Skill</div>
+            <div class="sub">导入第一个提示词，开始体验对比与优化</div>
+            <button class="btn btn-primary btn-sm" id="empty-skill-import-btn" style="margin-top:14px">+ 导入第一个 Skill</button>
+          </div>`
+        document.getElementById('empty-skill-import-btn').addEventListener('click', () => {
+          document.getElementById('skill-import-btn').click()
+        })
+      }
       paginationEl.innerHTML = ''
       return
     }

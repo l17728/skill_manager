@@ -38,7 +38,20 @@ const ProjectPage = (() => {
       : res.data.items
 
     if (items.length === 0) {
-      listEl.innerHTML = `<div class="empty-state" style="padding:30px"><div class="icon">🧪</div><div class="title">No projects found</div></div>`
+      if (keyword) {
+        listEl.innerHTML = `<div class="empty-state" style="padding:30px"><div class="icon">🧪</div><div class="title">No projects found</div><div class="sub">Try a different search term</div></div>`
+      } else {
+        listEl.innerHTML = `
+          <div class="empty-state guide-card" style="padding:30px;text-align:center">
+            <div class="icon">🧪</div>
+            <div class="title">还没有测试项目</div>
+            <div class="sub">选择 Skill 和基线，创建一次对比测试实验</div>
+            <button class="btn btn-primary btn-sm" id="empty-project-create-btn" style="margin-top:14px">+ 创建第一个项目</button>
+          </div>`
+        document.getElementById('empty-project-create-btn').addEventListener('click', () => {
+          document.getElementById('project-create-btn').click()
+        })
+      }
       paginationEl.innerHTML = ''
       return
     }
@@ -381,10 +394,29 @@ const ProjectPage = (() => {
     window.notify('Test stopped', 'info')
   }
 
+  // ─── Prerequisite banner helper (P0-1) ────────────────────────────────────
+
+  const _TAB_LABELS = { test: 'Test', analysis: 'Analysis', recompose: 'Recompose', iteration: 'Iteration' }
+
+  function _showPrereqBanner(bodyEl, message, targetTab) {
+    bodyEl.innerHTML = `
+      <div class="prereq-banner">
+        <span class="prereq-banner-msg">⚠ ${message}</span>
+        <button class="btn btn-sm" data-prereq-tab="${targetTab}">→ 前往 ${_TAB_LABELS[targetTab] || targetTab}</button>
+      </div>
+    `
+    bodyEl.querySelector('[data-prereq-tab]').addEventListener('click', () => switchTab(targetTab))
+  }
+
   // ─── Analysis tab ──────────────────────────────────────────────────────────
 
   async function loadAnalysisReport() {
     const body = document.getElementById('analysis-body')
+    // P0-1: prerequisite — test must be completed
+    if (currentProjectConfig?.status !== 'completed') {
+      _showPrereqBanner(body, '请先完成测试，才能运行分析', 'test')
+      return
+    }
     body.innerHTML = `<div class="empty-state"><div class="spinner"></div></div>`
     const res = await window.api.analysis.getReport({ projectId: currentProjectId })
     if (!res.success || !res.data) {
@@ -456,16 +488,24 @@ const ProjectPage = (() => {
 
   // ─── Recompose tab ─────────────────────────────────────────────────────────
 
-  function _loadRecomposeTab() {
+  async function _loadRecomposeTab() {
     if (recomposePreview) { renderRecomposePreview(recomposePreview); return }
-    document.getElementById('recompose-body').innerHTML = `
+    const body = document.getElementById('recompose-body')
+    document.getElementById('recompose-save-open-btn').style.display = 'none'
+    // P0-1: prerequisite — analysis report must exist
+    body.innerHTML = `<div class="empty-state"><div class="spinner"></div></div>`
+    const analysisRes = await window.api.analysis.getReport({ projectId: currentProjectId })
+    if (!analysisRes.success || !analysisRes.data) {
+      _showPrereqBanner(body, '请先运行差异分析，才能执行重组', 'analysis')
+      return
+    }
+    body.innerHTML = `
       <div class="empty-state">
         <div class="icon">🔀</div>
         <div class="title">Recompose Skill</div>
         <div class="sub">Click "Execute" to build an optimised skill from advantage segments</div>
       </div>
     `
-    document.getElementById('recompose-save-open-btn').style.display = 'none'
   }
 
   async function _executeRecompose() {
@@ -503,9 +543,11 @@ const ProjectPage = (() => {
   }
 
   function _openSaveRecomposeModal() {
-    document.getElementById('recompose-save-name').value     = ''
-    document.getElementById('recompose-save-purpose').value  = currentProjectConfig?.skills?.[0]?.purpose || ''
-    document.getElementById('recompose-save-provider').value = 'recomposed'
+    // P0-3: pre-fill from first source skill so user only needs to adjust the name
+    const firstSkill = currentProjectConfig?.skills?.[0]
+    document.getElementById('recompose-save-name').value     = firstSkill ? `${firstSkill.name}-融合版` : ''
+    document.getElementById('recompose-save-purpose').value  = firstSkill?.purpose || ''
+    document.getElementById('recompose-save-provider').value = firstSkill?.provider || 'recomposed'
     window.openModal('recompose-save-modal')
   }
 

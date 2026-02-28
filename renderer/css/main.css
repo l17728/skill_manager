@@ -593,6 +593,29 @@ select.form-input { cursor: pointer; }
 .score-mid { color: var(--warning); }
 .score-lo  { color: var(--error); }
 
+/* ===== P0-1: Prerequisite Banner ===== */
+.prereq-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 12px;
+  background: rgba(251,191,36,0.08);
+  border: 1px solid var(--warning);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--warning);
+}
+.prereq-banner-msg { flex: 1; }
+
+/* ===== P0-2: Empty-state Guide Card ===== */
+.guide-card {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  margin: 16px;
+  cursor: default;
+}
+
 .import-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
 .import-tab {
   padding: 6px 14px;

@@ -32,7 +32,21 @@ const BaselinePage = (() => {
     const paginationEl = document.getElementById('baseline-pagination')
 
     if (res.data.items.length === 0) {
-      listEl.innerHTML = `<div class="empty-state" style="padding:30px"><div class="icon">📋</div><div class="title">No baselines found</div></div>`
+      const hasFilter = keyword || activeTagFilters.length || activePurpose || activeProvider
+      if (hasFilter) {
+        listEl.innerHTML = `<div class="empty-state" style="padding:30px"><div class="icon">📋</div><div class="title">No baselines found</div><div class="sub">Try clearing filters</div></div>`
+      } else {
+        listEl.innerHTML = `
+          <div class="empty-state guide-card" style="padding:30px;text-align:center">
+            <div class="icon">📋</div>
+            <div class="title">还没有测试基线</div>
+            <div class="sub">先创建一套"标准试卷"，再用它来评测 Skill</div>
+            <button class="btn btn-primary btn-sm" id="empty-baseline-import-btn" style="margin-top:14px">+ 导入第一套基线</button>
+          </div>`
+        document.getElementById('empty-baseline-import-btn').addEventListener('click', () => {
+          document.getElementById('baseline-import-btn').click()
+        })
+      }
       paginationEl.innerHTML = ''
       return
     }
